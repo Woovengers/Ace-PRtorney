@@ -1,3 +1,5 @@
+import { REVIEWPACE_REPOS } from "../config/repos.js";
+
 async function loadJson(path) {
   const response = await fetch(path);
   if (!response.ok) {
@@ -32,6 +34,26 @@ function sortPeople(peopleMap) {
   });
 }
 
+function fallbackRepositories() {
+  return REVIEWPACE_REPOS.map((repo) => {
+    const [owner, name] = repo.fullName.split("/");
+    return {
+      fullName: repo.fullName,
+      owner,
+      name,
+      track: repo.track,
+      trackLabel: repo.track === "backend" ? "BE" : repo.track === "frontend" ? "FE" : "AN",
+      prCount: 0,
+      reviewEventCount: 0,
+      reviewerEventCount: 0,
+      crewCommentCount: 0,
+      crewCount: 0,
+      reviewerCount: 0,
+      latestActivityAt: null,
+    };
+  });
+}
+
 async function loadOverviewFromApi() {
   const data = await loadApiJson("/api/overview");
   const peopleMap = data.peopleMap ?? data.personStats?.people ?? {};
@@ -41,6 +63,7 @@ async function loadOverviewFromApi() {
     members: data.members ?? [],
     people,
     peopleMap,
+    repositories: data.repositories ?? [],
     personStats: data.personStats ?? { people: peopleMap },
     summary: data.summary,
     recentActivity: data.recentActivity,
@@ -64,6 +87,7 @@ async function loadOverviewFromPublicJson() {
     members,
     people,
     peopleMap,
+    repositories: fallbackRepositories(),
     personStats,
     summary,
     recentActivity,

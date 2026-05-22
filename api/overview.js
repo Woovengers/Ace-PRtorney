@@ -67,6 +67,25 @@ function serializeActivity(row) {
   };
 }
 
+function serializeRepository(row) {
+  const summary = row.summary ?? {};
+
+  return {
+    fullName: row.full_name,
+    owner: row.owner,
+    name: row.name,
+    track: row.track,
+    trackLabel: trackLabel(row.track),
+    prCount: summary.prCount ?? 0,
+    reviewEventCount: summary.reviewEventCount ?? 0,
+    reviewerEventCount: summary.reviewerEventCount ?? 0,
+    crewCommentCount: summary.crewCommentCount ?? 0,
+    crewCount: summary.crewCount ?? 0,
+    reviewerCount: summary.reviewerCount ?? 0,
+    latestActivityAt: summary.latestActivityAt ?? null,
+  };
+}
+
 function percent(value, total) {
   if (!total) return 0;
   return Math.round((value / total) * 100);
@@ -144,6 +163,19 @@ export async function loadOverviewFromDb(client) {
       from recent_activities
       order by role, occurred_at desc
     `);
+  const repositoriesResult = await client.query(`
+      select
+        r.full_name,
+        r.owner,
+        r.name,
+        r.track,
+        coalesce(rs.summary, '{}'::jsonb) as summary
+      from repos r
+      left join repo_summary_stats rs on rs.repo_full_name = r.full_name
+      order by
+        (coalesce(rs.summary->>'prCount', '0'))::int desc,
+        r.full_name
+    `);
 
   const generatedAt = new Date().toISOString();
   const summaryRow = summaryResult.rows[0];
@@ -151,6 +183,7 @@ export async function loadOverviewFromDb(client) {
   const people = peopleResult.rows.map(serializePerson);
   const peopleMap = Object.fromEntries(people.map((person) => [person.githubId, person]));
   const recentRows = recentResult.rows.map(serializeActivity);
+  const repositories = repositoriesResult.rows.map(serializeRepository);
   const recentActivity = {
     generatedAt: new Date().toISOString(),
     crew: recentRows.filter((item) => item.role === "crew"),
@@ -170,6 +203,7 @@ export async function loadOverviewFromDb(client) {
     members,
     people,
     peopleMap,
+    repositories,
     personStats: {
       generatedAt,
       sourceGeneratedAt: summaryRow.source_generated_at?.toISOString?.() ?? null,

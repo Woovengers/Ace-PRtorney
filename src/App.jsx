@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { loadOverviewData } from "./data/loaders.js";
+import MissionBoardPage from "./components/pages/MissionBoardPage.jsx";
+import MissionDetailPage from "./components/pages/MissionDetailPage.jsx";
 import OverviewPage from "./components/pages/OverviewPage.jsx";
 import PersonDetailPage from "./components/pages/PersonDetailPage.jsx";
 import PlaceholderPage from "./components/pages/PlaceholderPage.jsx";
@@ -121,7 +123,8 @@ export default function App() {
           />
         }
       />
-      <Route path="/missions" element={<PlaceholderPage type="missions" />} />
+      <Route path="/missions" element={<MissionBoardPage data={data} loading={!data} />} />
+      <Route path="/missions/:owner/:name" element={<MissionDetailPage data={data} loading={!data} />} />
       <Route path="/compare" element={<PlaceholderPage type="compare" />} />
       <Route path="/matches" element={<PlaceholderPage type="matches" />} />
       <Route path="*" element={<Navigate to="/" replace />} />
