@@ -8,9 +8,9 @@ export default function handler(request, response) {
     return;
   }
 
-  const clientId = process.env.GITHUB_APP_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
+  const clientId = process.env.GITHUB_APP_CLIENT_ID || process.env.GH_APP_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
   if (!clientId) {
-    sendError(response, 500, "github_app_auth_not_configured", "GITHUB_APP_CLIENT_ID is required");
+    sendError(response, 500, "github_app_auth_not_configured", "GITHUB_APP_CLIENT_ID or GH_APP_CLIENT_ID is required");
     return;
   }
 

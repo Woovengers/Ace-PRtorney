@@ -7,8 +7,8 @@ import {
 import { methodNotAllowed, sendError } from "../../_lib/http.js";
 
 async function exchangeCode({ code, redirectUri }) {
-  const clientId = process.env.GITHUB_APP_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_APP_CLIENT_SECRET || process.env.GITHUB_CLIENT_SECRET;
+  const clientId = process.env.GITHUB_APP_CLIENT_ID || process.env.GH_APP_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_APP_CLIENT_SECRET || process.env.GH_APP_CLIENT_SECRET || process.env.GITHUB_CLIENT_SECRET;
 
   const response = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
@@ -51,11 +51,11 @@ export default async function handler(request, response) {
     return;
   }
 
-  const clientId = process.env.GITHUB_APP_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_APP_CLIENT_SECRET || process.env.GITHUB_CLIENT_SECRET;
+  const clientId = process.env.GITHUB_APP_CLIENT_ID || process.env.GH_APP_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_APP_CLIENT_SECRET || process.env.GH_APP_CLIENT_SECRET || process.env.GITHUB_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    sendError(response, 500, "github_app_auth_not_configured", "GITHUB_APP_CLIENT_ID and GITHUB_APP_CLIENT_SECRET are required");
+    sendError(response, 500, "github_app_auth_not_configured", "GITHUB_APP_CLIENT_ID/GH_APP_CLIENT_ID and GITHUB_APP_CLIENT_SECRET/GH_APP_CLIENT_SECRET are required");
     return;
   }
 

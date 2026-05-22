@@ -24,11 +24,13 @@ function parseCookies(request) {
 
 function cookieSecret() {
   const secret = process.env.GITHUB_APP_COOKIE_SECRET
+    || process.env.GH_APP_COOKIE_SECRET
     || process.env.GITHUB_OAUTH_COOKIE_SECRET
     || process.env.GITHUB_APP_CLIENT_SECRET
+    || process.env.GH_APP_CLIENT_SECRET
     || process.env.GITHUB_CLIENT_SECRET;
   if (!secret) {
-    throw new Error("GITHUB_APP_COOKIE_SECRET or GITHUB_APP_CLIENT_SECRET is required");
+    throw new Error("GITHUB_APP_COOKIE_SECRET, GH_APP_COOKIE_SECRET, GITHUB_APP_CLIENT_SECRET, or GH_APP_CLIENT_SECRET is required");
   }
   return crypto.createHash("sha256").update(secret).digest();
 }
