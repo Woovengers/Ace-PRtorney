@@ -10,12 +10,26 @@ import { displayMeta, displayName } from "../../utils/person.js";
 import { formatHours, formatNumber } from "../../utils/time.js";
 
 function candidateLabel(person) {
-  return `${displayName(person)} · @${person.githubId}`;
+  return displayName(person);
 }
 
 function recentReferenceLabel(recentReferenceAt) {
   if (!recentReferenceAt) return "최근 기준일 없음";
   return `최근 기준일 ${new Date(recentReferenceAt).toLocaleDateString("ko-KR")}`;
+}
+
+function trackName(track) {
+  if (track === "backend") return "백엔드";
+  if (track === "frontend") return "프론트엔드";
+  if (track === "android") return "안드로이드";
+  return track ?? "트랙 정보 없음";
+}
+
+function excludedReasonLabel(reason) {
+  if (reason === "no reviewer data") return "리뷰어 활동 데이터 없음";
+  if (reason === "no recent reviewer activity") return "최근 30일 리뷰 활동 없음";
+  if (reason === "different track") return "크루와 다른 트랙";
+  return reason ?? "제외됨";
 }
 
 export default function CandidateComparePage({ data, people, onSelectPerson }) {
@@ -42,6 +56,10 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
     [crew, people, candidateIds, recentReferenceAt],
   );
   const result = apiResult ?? { crew, ...candidateMatches };
+  const peopleByGithubId = useMemo(
+    () => new Map(people.map((person) => [person.githubId, person])),
+    [people],
+  );
   const candidateSuggestions = reviewerPeople
     .filter((person) => {
       const query = candidateQuery.trim().toLowerCase();
@@ -63,6 +81,14 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
   function removeCandidate(githubId) {
     setCandidateIds((ids) => ids.filter((id) => id !== githubId));
     setApiResult(null);
+  }
+
+  function selectedCandidateName(githubId) {
+    return displayName(peopleByGithubId.get(githubId) ?? { githubId });
+  }
+
+  function excludedCandidateName(candidate) {
+    return displayName(peopleByGithubId.get(candidate.githubId) ?? candidate);
   }
 
   async function runApiCompare() {
@@ -102,9 +128,9 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
 
       <div className="mx-auto w-full max-w-[1440px] px-6 pb-16 pt-12 md:px-[54px]">
         <section className="max-w-3xl">
-          <p className="text-xs font-semibold text-rp-purple">CANDIDATE COMPARE</p>
+          <p className="text-xs font-semibold text-rp-purple">후보 직접 비교</p>
           <h1 className="mt-3 text-[46px] font-extrabold leading-none md:text-[72px]">
-            Candidate Compare
+            리뷰어 후보 비교
           </h1>
           <p className="mt-6 text-base text-rp-muted">
             특정 크루에게 후보 리뷰어를 직접 넣고, 같은 기준으로 점수를 비교합니다.
@@ -135,7 +161,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
                 id="candidate-search"
                 value={candidateQuery}
                 onChange={(event) => setCandidateQuery(event.target.value)}
-                placeholder="후보 리뷰어 GitHub ID 또는 닉네임 검색"
+                placeholder="후보 리뷰어 닉네임 또는 GitHub ID 검색"
                 className="min-h-12 w-full rounded-md border border-rp-line bg-rp-bg px-4 text-sm text-rp-text outline-none transition focus:border-rp-cyan"
               />
               {candidateSuggestions.length > 0 ? (
@@ -147,8 +173,11 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
                       className="flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-rp-panel2"
                       onClick={() => addCandidate(person)}
                     >
-                      <span className="text-sm font-semibold text-rp-text">{candidateLabel(person)}</span>
-                      <span className="text-xs text-rp-subtle">{person.track}</span>
+                      <span>
+                        <span className="block text-sm font-semibold text-rp-text">{candidateLabel(person)}</span>
+                        <span className="text-xs text-rp-subtle">{displayMeta(person)}</span>
+                      </span>
+                      <span className="text-xs text-rp-subtle">{trackName(person.track)}</span>
                     </button>
                   ))}
                 </div>
@@ -157,7 +186,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
           </div>
 
           <Surface glow="purple" className="p-5">
-            <h2 className="text-base font-extrabold text-rp-text">Selected Candidates</h2>
+            <h2 className="text-base font-extrabold text-rp-text">선택한 후보</h2>
             <div className="mt-4 flex flex-wrap gap-2">
               {candidateIds.length === 0 ? (
                 <p className="text-sm text-rp-muted">후보 리뷰어를 추가하세요.</p>
@@ -169,7 +198,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
                     className="rounded-full border border-rp-line bg-rp-panel2 px-3 py-2 text-xs font-semibold text-rp-muted transition hover:text-rp-text"
                     onClick={() => removeCandidate(githubId)}
                   >
-                    @{githubId} remove
+                    {selectedCandidateName(githubId)} 삭제
                   </button>
                 ))
               )}
@@ -180,7 +209,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
               className="mt-5 w-full rounded-md border border-rp-line bg-rp-purple px-4 py-3 text-sm font-semibold text-white transition hover:shadow-glow-purple disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:shadow-none"
               onClick={runApiCompare}
             >
-              Compare with API
+              DB 기준으로 비교하기
             </button>
             {apiError ? <p className="mt-3 text-xs text-rp-yellow">API 실패 시 로컬 계산 결과를 표시합니다.</p> : null}
           </Surface>
@@ -188,23 +217,23 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
 
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            title="Crew"
+            title="크루"
             value={crew ? displayName(crew) : "-"}
             note={crew ? displayMeta(crew) : "크루를 먼저 선택하세요"}
             glow="cyan"
           />
-          <MetricCard title="Candidates" value={formatNumber(candidateIds.length)} note="selected reviewers" glow="purple" />
-          <MetricCard title="Included" value={formatNumber(result.matches.length)} note="recent same-track candidates" glow="green" />
-          <MetricCard title="Excluded" value={formatNumber(result.excludedCandidates.length)} note="different track / inactive" glow="yellow" />
+          <MetricCard title="후보" value={formatNumber(candidateIds.length)} note="선택한 리뷰어" glow="purple" />
+          <MetricCard title="포함" value={formatNumber(result.matches.length)} note="최근 활동이 있는 같은 트랙 후보" glow="green" />
+          <MetricCard title="제외" value={formatNumber(result.excludedCandidates.length)} note="다른 트랙 또는 최근 활동 없음" glow="yellow" />
         </section>
 
         {result.excludedCandidates.length > 0 ? (
           <Surface glow="yellow" className="mt-8 p-5">
-            <h2 className="text-base font-extrabold text-rp-text">Excluded Candidates</h2>
+            <h2 className="text-base font-extrabold text-rp-text">제외된 후보</h2>
             <div className="mt-4 flex flex-wrap gap-2">
               {result.excludedCandidates.map((candidate) => (
                 <span key={candidate.githubId} className="rounded-full border border-rp-line bg-rp-panel2 px-3 py-2 text-xs text-rp-muted">
-                  @{candidate.githubId} · {candidate.reason}
+                  {excludedCandidateName(candidate)} · {excludedReasonLabel(candidate.reason)}
                 </span>
               ))}
             </div>
@@ -223,9 +252,9 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
                 <p className="text-[38px] font-extrabold leading-none text-rp-green">{match.score}</p>
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                <p className="text-xs text-rp-subtle">first {formatHours(match.reviewer.asReviewer.avgFirstResponseHours)}</p>
-                <p className="text-xs text-rp-subtle">median rereview {formatHours(match.reviewer.asReviewer.avgRereviewHours)}</p>
-                <p className="text-xs text-rp-subtle">events {formatNumber(match.reviewer.asReviewer.reviewEvents)}</p>
+                <p className="text-xs text-rp-subtle">첫 응답 {formatHours(match.reviewer.asReviewer.avgFirstResponseHours)}</p>
+                <p className="text-xs text-rp-subtle">재리뷰 중앙값 {formatHours(match.reviewer.asReviewer.avgRereviewHours)}</p>
+                <p className="text-xs text-rp-subtle">리뷰 이벤트 {formatNumber(match.reviewer.asReviewer.reviewEvents)}</p>
               </div>
             </Surface>
           ))}
