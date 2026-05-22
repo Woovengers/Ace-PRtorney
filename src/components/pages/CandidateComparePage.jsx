@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import AppHeader from "../common/AppHeader.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
 import { compareReviewerCandidates } from "../../utils/reviewerMatch.js";
-import { displayMeta, displayName, isPreferredCrew } from "../../utils/person.js";
+import { displayMeta, displayName } from "../../utils/person.js";
 import { formatHours, formatNumber } from "../../utils/time.js";
-
-function firstCrew(people) {
-  return people.find((person) => isPreferredCrew(person)) ?? people.find((person) => person.asCrew?.hasData);
-}
 
 function candidateLabel(person) {
   return `${displayName(person)} · @${person.githubId}`;
@@ -24,7 +20,7 @@ function recentReferenceLabel(recentReferenceAt) {
 export default function CandidateComparePage({ data, people, onSelectPerson }) {
   const crewPeople = people.filter((person) => person.asCrew?.hasData);
   const reviewerPeople = people.filter((person) => person.asReviewer?.hasData);
-  const [crew, setCrew] = useState(firstCrew(crewPeople));
+  const [crew, setCrew] = useState(null);
   const [candidateQuery, setCandidateQuery] = useState("");
   const [candidateIds, setCandidateIds] = useState([]);
   const [apiResult, setApiResult] = useState(null);
@@ -57,10 +53,6 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
     })
     .slice(0, 6);
 
-  useEffect(() => {
-    if (!crew && crewPeople.length > 0) setCrew(firstCrew(crewPeople));
-  }, [crew, crewPeople]);
-
   function addCandidate(person) {
     setCandidateIds((ids) => [...new Set([...ids, person.githubId])]);
     setCandidateQuery("");
@@ -75,7 +67,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
   async function runApiCompare() {
     setApiError(null);
     setApiResult(null);
-    if (!shouldUseApi()) return;
+    if (!crew || candidateIds.length === 0 || !shouldUseApi()) return;
 
     try {
       const data = await fetchJson("/api/matches/compare", {
@@ -92,7 +84,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
     }
   }
 
-  if (!crew) {
+  if (crewPeople.length === 0) {
     return (
       <main className="page-grid grid min-h-screen place-items-center px-6 text-rp-text">
         <Surface glow="yellow" className="max-w-lg p-6">
@@ -179,7 +171,8 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
             </div>
             <button
               type="button"
-              className="mt-5 w-full rounded-md border border-rp-line bg-rp-purple px-4 py-3 text-sm font-semibold text-white transition hover:shadow-glow-purple"
+              disabled={!crew || candidateIds.length === 0}
+              className="mt-5 w-full rounded-md border border-rp-line bg-rp-purple px-4 py-3 text-sm font-semibold text-white transition hover:shadow-glow-purple disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:shadow-none"
               onClick={runApiCompare}
             >
               Compare with API
@@ -189,7 +182,12 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
         </section>
 
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard title="Crew" value={displayName(crew)} note={displayMeta(crew)} glow="cyan" />
+          <MetricCard
+            title="Crew"
+            value={crew ? displayName(crew) : "-"}
+            note={crew ? displayMeta(crew) : "크루를 먼저 선택하세요"}
+            glow="cyan"
+          />
           <MetricCard title="Candidates" value={formatNumber(candidateIds.length)} note="selected reviewers" glow="purple" />
           <MetricCard title="Included" value={formatNumber(result.matches.length)} note="recent same-track candidates" glow="green" />
           <MetricCard title="Excluded" value={formatNumber(result.excludedCandidates.length)} note="different track / inactive" glow="yellow" />
