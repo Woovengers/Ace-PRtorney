@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import ActivityBars from "../charts/ActivityBars.jsx";
 import AppHeader from "../common/AppHeader.jsx";
+import MatchModeTabs from "../common/MatchModeTabs.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
@@ -73,6 +74,7 @@ function MatchLanding({ crewPeople, onSelectPerson, onNavigate }) {
             크루를 검색해 최근 한 달 동안 리뷰 활동이 있는 같은 트랙 리뷰어를 추천받거나,
             후보 리뷰어를 직접 추가해 비교하세요.
           </p>
+          <MatchModeTabs active="auto" />
         </section>
 
         <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -256,6 +258,7 @@ export default function ReviewerMatchPage({
           <p className="mt-3 text-sm text-rp-subtle">
             리뷰 품질이 아닌 활동 시간대와 응답 이력을 기준으로 한 추천입니다. {recentReferenceLabel(recentReferenceAt)}
           </p>
+          <MatchModeTabs active="auto" autoHref={`/matches/${crew.githubId}`} />
         </section>
 
         <section className="mt-8 max-w-3xl">

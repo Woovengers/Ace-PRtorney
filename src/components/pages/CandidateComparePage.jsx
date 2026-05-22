@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import AppHeader from "../common/AppHeader.jsx";
+import MatchModeTabs from "../common/MatchModeTabs.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
@@ -111,6 +112,10 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
           <p className="mt-3 text-sm text-rp-subtle">
             최근 30일 리뷰 활동이 없는 후보와 다른 트랙 후보는 제외됩니다. {recentReferenceLabel(recentReferenceAt)}
           </p>
+          <MatchModeTabs
+            active="compare"
+            autoHref={crew ? `/matches/${crew.githubId}` : "/matches"}
+          />
         </section>
 
         <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
