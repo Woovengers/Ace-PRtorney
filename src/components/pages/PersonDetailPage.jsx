@@ -212,13 +212,16 @@ export default function PersonDetailPage({
   const [prError, setPrError] = useState(null);
   const sentinelRef = useRef(null);
   const requestVersionRef = useRef(0);
+  const isPrLoadingRef = useRef(false);
 
   const loadPrPage = useCallback(
     async (offset, { reset = false } = {}) => {
       if (!githubId || !shouldUseApi()) return;
+      if (isPrLoadingRef.current) return;
 
       const requestVersion = reset ? requestVersionRef.current + 1 : requestVersionRef.current;
       if (reset) requestVersionRef.current = requestVersion;
+      isPrLoadingRef.current = true;
       setIsPrLoading(true);
       setPrError(null);
 
@@ -243,7 +246,10 @@ export default function PersonDetailPage({
       } catch (error) {
         if (requestVersion === requestVersionRef.current) setPrError(error);
       } finally {
-        if (requestVersion === requestVersionRef.current) setIsPrLoading(false);
+        isPrLoadingRef.current = false;
+        if (requestVersion === requestVersionRef.current) {
+          setIsPrLoading(false);
+        }
       }
     },
     [githubId, mode],
@@ -254,6 +260,8 @@ export default function PersonDetailPage({
     setDetail(null);
     setPrPage(EMPTY_PR_PAGE);
     setPrError(null);
+    isPrLoadingRef.current = false;
+    setIsPrLoading(false);
 
     if (!githubId || !shouldUseApi()) {
       return () => {
@@ -271,20 +279,21 @@ export default function PersonDetailPage({
   useEffect(() => {
     if (!githubId || !shouldUseApi() || !prPage.hasMore || isPrLoading || prError) return;
 
-    const node = sentinelRef.current;
-    if (!node) return;
+    function loadNearBottom() {
+      const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (remaining < 720) {
+        loadPrPage(prPage.nextOffset);
+      }
+    }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          loadPrPage(prPage.nextOffset);
-        }
-      },
-      { rootMargin: "520px 0px" },
-    );
+    loadNearBottom();
+    window.addEventListener("scroll", loadNearBottom, { passive: true });
+    window.addEventListener("resize", loadNearBottom);
 
-    observer.observe(node);
-    return () => observer.disconnect();
+    return () => {
+      window.removeEventListener("scroll", loadNearBottom);
+      window.removeEventListener("resize", loadNearBottom);
+    };
   }, [githubId, isPrLoading, loadPrPage, prError, prPage.hasMore, prPage.nextOffset]);
 
   if (loading) return <LoadingState />;
