@@ -173,14 +173,14 @@ export default function OverviewPage({
             value="크루"
             note="상세 분석으로 이동"
             glow="cyan"
-            onClick={() => onNavigate("crew", selectedPerson)}
+            onClick={() => onNavigate("crew")}
           />
           <MetricCard
             title="Reviewer Rhythm"
             value="리뷰어"
             note="상세 분석으로 이동"
             glow="green"
-            onClick={() => onNavigate("reviewer", selectedPerson)}
+            onClick={() => onNavigate("reviewer")}
           />
           <MetricCard
             title="Mission Board"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import ActivityBars from "../charts/ActivityBars.jsx";
 import AppHeader from "../common/AppHeader.jsx";
@@ -12,6 +12,13 @@ import { formatHours, formatNumber, formatShortDate } from "../../utils/time.js"
 
 const HOUR_LABELS = Array.from({ length: 24 }, (_, hour) => (hour % 3 === 0 ? `${hour}` : ""));
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const PR_PAGE_SIZE = 20;
+const EMPTY_PR_PAGE = {
+  items: [],
+  total: 0,
+  nextOffset: 0,
+  hasMore: false,
+};
 
 function firstPersonForMode(people, mode) {
   if (mode === "crew") {
@@ -114,12 +121,24 @@ function StatNarrative({ mode, stats }) {
   );
 }
 
-function RecentPrList({ title, prs }) {
-  if (!prs?.length) return null;
-
+function PrList({
+  title,
+  prs,
+  total,
+  hasMore,
+  isLoading,
+  error,
+  onRetry,
+  sentinelRef,
+}) {
   return (
     <Surface glow="green" className="p-5">
-      <h2 className="text-base font-extrabold text-rp-text">{title}</h2>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-base font-extrabold text-rp-text">{title}</h2>
+        <p className="text-xs text-rp-subtle">
+          {formatNumber(prs.length)} / {formatNumber(total)} loaded
+        </p>
+      </div>
       <div className="mt-5 divide-y divide-rp-line">
         {prs.map((pr) => (
           <Link
@@ -143,8 +162,38 @@ function RecentPrList({ title, prs }) {
           </Link>
         ))}
       </div>
+      {!prs.length && !isLoading && !error ? (
+        <p className="mt-5 text-sm text-rp-muted">표시할 PR 목록이 없습니다.</p>
+      ) : null}
+      {error ? (
+        <div className="mt-5 flex flex-col gap-3 rounded-md border border-rp-line bg-rp-panel2 p-4 text-sm text-rp-muted sm:flex-row sm:items-center sm:justify-between">
+          <span>PR 목록을 더 불러오지 못했습니다.</span>
+          <button
+            type="button"
+            className="inline-flex w-fit rounded-md border border-rp-line px-3 py-2 text-xs font-semibold text-rp-text transition hover:bg-rp-panel"
+            onClick={onRetry}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+      {isLoading ? (
+        <p className="mt-5 text-sm font-semibold text-rp-cyan">Loading PRs...</p>
+      ) : null}
+      {!isLoading && !error && prs.length > 0 && !hasMore ? (
+        <p className="mt-5 text-sm text-rp-muted">All PRs loaded.</p>
+      ) : null}
+      <div ref={sentinelRef} className="h-8" />
     </Surface>
   );
+}
+
+function mergeUniquePrs(current, next) {
+  const map = new Map(current.map((pr) => [`${pr.repoFullName}#${pr.prNumber}`, pr]));
+  for (const pr of next) {
+    map.set(`${pr.repoFullName}#${pr.prNumber}`, pr);
+  }
+  return [...map.values()];
 }
 
 export default function PersonDetailPage({
@@ -158,29 +207,85 @@ export default function PersonDetailPage({
 }) {
   const { githubId } = useParams();
   const [detail, setDetail] = useState(null);
+  const [prPage, setPrPage] = useState(EMPTY_PR_PAGE);
+  const [isPrLoading, setIsPrLoading] = useState(false);
+  const [prError, setPrError] = useState(null);
+  const sentinelRef = useRef(null);
+  const requestVersionRef = useRef(0);
+
+  const loadPrPage = useCallback(
+    async (offset, { reset = false } = {}) => {
+      if (!githubId || !shouldUseApi()) return;
+
+      const requestVersion = reset ? requestVersionRef.current + 1 : requestVersionRef.current;
+      if (reset) requestVersionRef.current = requestVersion;
+      setIsPrLoading(true);
+      setPrError(null);
+
+      try {
+        const params = new URLSearchParams({
+          mode,
+          limit: String(PR_PAGE_SIZE),
+          offset: String(offset),
+        });
+        const payload = await fetchJson(`/api/people/${githubId}?${params.toString()}`);
+        const nextPage = payload.prList ?? EMPTY_PR_PAGE;
+
+        if (requestVersion !== requestVersionRef.current) return;
+
+        setDetail(payload);
+        setPrPage((current) => ({
+          items: reset ? nextPage.items : mergeUniquePrs(current.items, nextPage.items),
+          total: nextPage.total,
+          nextOffset: nextPage.nextOffset,
+          hasMore: nextPage.hasMore,
+        }));
+      } catch (error) {
+        if (requestVersion === requestVersionRef.current) setPrError(error);
+      } finally {
+        if (requestVersion === requestVersionRef.current) setIsPrLoading(false);
+      }
+    },
+    [githubId, mode],
+  );
 
   useEffect(() => {
-    let cancelled = false;
+    requestVersionRef.current += 1;
     setDetail(null);
+    setPrPage(EMPTY_PR_PAGE);
+    setPrError(null);
 
     if (!githubId || !shouldUseApi()) {
       return () => {
-        cancelled = true;
+        requestVersionRef.current += 1;
       };
     }
 
-    fetchJson(`/api/people/${githubId}`)
-      .then((payload) => {
-        if (!cancelled) setDetail(payload);
-      })
-      .catch(() => {
-        if (!cancelled) setDetail(null);
-      });
+    loadPrPage(0, { reset: true });
 
     return () => {
-      cancelled = true;
+      requestVersionRef.current += 1;
     };
-  }, [githubId]);
+  }, [githubId, loadPrPage]);
+
+  useEffect(() => {
+    if (!githubId || !shouldUseApi() || !prPage.hasMore || isPrLoading || prError) return;
+
+    const node = sentinelRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadPrPage(prPage.nextOffset);
+        }
+      },
+      { rootMargin: "520px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [githubId, isPrLoading, loadPrPage, prError, prPage.hasMore, prPage.nextOffset]);
 
   if (loading) return <LoadingState />;
   if (!githubId) return <EmptyState mode={mode} people={people} />;
@@ -193,6 +298,10 @@ export default function PersonDetailPage({
   const glow = mode === "crew" ? "cyan" : "green";
   const title = mode === "crew" ? "Crew Pace" : "Reviewer Rhythm";
   const hasData = Boolean(stats?.hasData);
+  const searchSelection = selectedPerson?.githubId === person.githubId ? selectedPerson : person;
+  const fallbackPrs = mode === "crew" ? detail?.recentCrewPrs : detail?.recentReviewedPrs;
+  const listedPrs = shouldUseApi() ? prPage.items : (fallbackPrs ?? []);
+  const listedTotal = shouldUseApi() ? prPage.total : listedPrs.length;
 
   return (
     <main className="page-grid min-h-screen overflow-x-hidden text-rp-text">
@@ -231,7 +340,7 @@ export default function PersonDetailPage({
         <section className="mt-8 max-w-3xl">
           <SearchBox
             people={people}
-            selectedPerson={selectedPerson ?? person}
+            selectedPerson={searchSelection}
             onSelectPerson={onSelectPerson}
             onPersonNavigate={(nextPerson) => onNavigate(mode, nextPerson)}
           />
@@ -306,9 +415,15 @@ export default function PersonDetailPage({
         </section>
 
         <section className="mt-[58px]">
-          <RecentPrList
-            title={mode === "crew" ? "Recent Crew PRs" : "Recent Reviewed PRs"}
-            prs={mode === "crew" ? detail?.recentCrewPrs : detail?.recentReviewedPrs}
+          <PrList
+            title={mode === "crew" ? "Crew PRs" : "Reviewed PRs"}
+            prs={listedPrs}
+            total={listedTotal}
+            hasMore={prPage.hasMore}
+            isLoading={isPrLoading}
+            error={prError}
+            onRetry={() => loadPrPage(prPage.nextOffset)}
+            sentinelRef={sentinelRef}
           />
         </section>
       </div>

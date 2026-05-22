@@ -46,6 +46,12 @@ export default function SearchBox({ people, selectedPerson, onSelectPerson, onPe
             if (event.key === "Escape") {
               setIsOpen(false);
               event.currentTarget.blur();
+              return;
+            }
+
+            if (event.key === "Enter" && query.trim() && matches.length > 0) {
+              event.preventDefault();
+              selectPerson(matches[0]);
             }
           }}
           placeholder="닉네임 또는 GitHub ID 검색"
