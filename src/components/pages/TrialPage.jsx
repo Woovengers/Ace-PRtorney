@@ -537,7 +537,7 @@ function LineCommentComposer({ trialData, selectedLine, evidencePath, githubSess
   );
 }
 
-function CourtScene({ mode, selectedComment, reply, attorneyName }) {
+function CourtScene({ mode, selectedComment, reply, attorneyName, canGoNextComment, onNextComment }) {
   const isAttorney = mode === "attorney";
   const character = isAttorney ? ASSETS.attorney : ASSETS.prosecutor;
   const speaker = isAttorney ? attorneyName : selectedComment.actor;
@@ -580,7 +580,16 @@ function CourtScene({ mode, selectedComment, reply, attorneyName }) {
           <div className="text-lg font-semibold leading-relaxed text-rp-text md:text-xl">
             <MarkdownPreview value={dialogue} />
           </div>
-          <span className="absolute bottom-3 right-6 text-3xl font-extrabold text-rp-yellow">»</span>
+          <button
+            type="button"
+            onClick={onNextComment}
+            disabled={!canGoNextComment}
+            aria-label="다음 코멘트로 이동"
+            title="다음 코멘트로 이동"
+            className="absolute bottom-3 right-6 text-3xl font-extrabold text-rp-yellow transition hover:text-rp-text disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            »
+          </button>
         </div>
       </div>
     </section>
@@ -593,6 +602,8 @@ function ProsecutorStep({
   onReplyChange,
   onAdvance,
   onBack,
+  canGoNextComment,
+  onNextComment,
 }) {
   const evidenceLine = selectedComment.diffLines?.find((line) => line.flagged)
     ?? selectedComment.diffLines?.[0]
@@ -600,7 +611,13 @@ function ProsecutorStep({
 
   return (
     <>
-      <CourtScene mode="prosecutor" selectedComment={selectedComment} reply={reply} />
+      <CourtScene
+        mode="prosecutor"
+        selectedComment={selectedComment}
+        reply={reply}
+        canGoNextComment={canGoNextComment}
+        onNextComment={onNextComment}
+      />
       <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,820px)_436px]">
         <Surface glow="purple" className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -643,7 +660,17 @@ function ProsecutorStep({
   );
 }
 
-function AttorneyStep({ trialData, selectedComment, reply, githubSession, attorneyName, onBack, onBackToEvidence }) {
+function AttorneyStep({
+  trialData,
+  selectedComment,
+  reply,
+  githubSession,
+  attorneyName,
+  onBack,
+  onBackToEvidence,
+  canGoNextComment,
+  onNextComment,
+}) {
   const [posting, setPosting] = useState(false);
   const [postResult, setPostResult] = useState(null);
   const [postError, setPostError] = useState(null);
@@ -672,7 +699,14 @@ function AttorneyStep({ trialData, selectedComment, reply, githubSession, attorn
 
   return (
     <>
-      <CourtScene mode="attorney" selectedComment={selectedComment} reply={reply} attorneyName={attorneyName} />
+      <CourtScene
+        mode="attorney"
+        selectedComment={selectedComment}
+        reply={reply}
+        attorneyName={attorneyName}
+        canGoNextComment={canGoNextComment}
+        onNextComment={onNextComment}
+      />
       <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,820px)_436px]">
         <Surface glow="cyan" className="p-5">
           <h2 className="text-xl font-extrabold">GitHub 답글 게시 전 확인</h2>
@@ -768,6 +802,12 @@ function firstCommentableLine(lines) {
   return lines?.find((line) => line.line) ?? null;
 }
 
+function courtComments(trialData) {
+  const comments = trialData.comments ?? [];
+  const topLevelComments = comments.filter((comment) => !comment.inReplyToId);
+  return topLevelComments.length ? topLevelComments : comments;
+}
+
 export default function TrialPage() {
   const { owner, repo, number } = useParams();
   const [prUrl, setPrUrl] = useState(
@@ -788,6 +828,8 @@ export default function TrialPage() {
   const evidenceLines = linesForComment(trialData, selectedComment);
   const evidencePath = pathForComment(trialData, selectedComment);
   const attorneyName = githubSession?.user?.login ?? trialData.pr.author;
+  const nextableComments = courtComments(trialData);
+  const canGoNextComment = nextableComments.length > 1;
 
   useEffect(() => {
     let cancelled = false;
@@ -849,6 +891,19 @@ export default function TrialPage() {
   function handleSelectComment(comment) {
     setSelectedComment(comment);
     setSelectedLine(firstCommentableLine(comment.diffLines));
+  }
+
+  function handleNextComment() {
+    if (!canGoNextComment) return;
+
+    const currentIndex = nextableComments.findIndex((comment) => String(comment.id) === String(selectedComment.id));
+    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % nextableComments.length : 0;
+    const nextComment = nextableComments[nextIndex];
+
+    setSelectedComment(nextComment);
+    setSelectedLine(firstCommentableLine(nextComment.diffLines));
+    setReply("");
+    setStage("prosecutor");
   }
 
   return (
@@ -952,6 +1007,8 @@ export default function TrialPage() {
               onReplyChange={setReply}
               onBack={() => setStage("evidence")}
               onAdvance={() => setStage("attorney")}
+              canGoNextComment={canGoNextComment}
+              onNextComment={handleNextComment}
             />
           </section>
         ) : null}
@@ -966,6 +1023,8 @@ export default function TrialPage() {
               attorneyName={attorneyName}
               onBack={() => setStage("prosecutor")}
               onBackToEvidence={() => setStage("evidence")}
+              canGoNextComment={canGoNextComment}
+              onNextComment={handleNextComment}
             />
           </section>
         ) : null}
