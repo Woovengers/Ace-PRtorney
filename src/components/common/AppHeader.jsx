@@ -12,8 +12,8 @@ export default function AppHeader({ active }) {
   return (
     <header className="sticky top-0 z-30 border-b border-rp-line/70 bg-rp-bg/92 backdrop-blur">
       <div className="mx-auto flex h-[76px] w-full max-w-[1440px] items-center px-6 md:px-12">
-        <Link to="/trial" className="text-lg font-extrabold">
-          PRtorney
+        <Link to="/" className="text-lg font-extrabold">
+          Review Pace
         </Link>
         <Link to="/trial" className={cn("ml-auto text-sm font-semibold transition md:hidden", active === "trial" ? "text-rp-text" : "text-rp-subtle")}>
           Trial
