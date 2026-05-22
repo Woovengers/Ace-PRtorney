@@ -129,6 +129,7 @@ function PrList({
   isLoading,
   error,
   onRetry,
+  onLoadMore,
   sentinelRef,
 }) {
   return (
@@ -179,6 +180,15 @@ function PrList({
       ) : null}
       {isLoading ? (
         <p className="mt-5 text-sm font-semibold text-rp-cyan">Loading PRs...</p>
+      ) : null}
+      {!isLoading && !error && hasMore ? (
+        <button
+          type="button"
+          className="mt-5 inline-flex rounded-md border border-rp-line px-4 py-2 text-xs font-semibold text-rp-text transition hover:bg-rp-panel2"
+          onClick={onLoadMore}
+        >
+          Load more
+        </button>
       ) : null}
       {!isLoading && !error && prs.length > 0 && !hasMore ? (
         <p className="mt-5 text-sm text-rp-muted">All PRs loaded.</p>
@@ -290,19 +300,10 @@ export default function PersonDetailPage({
       }
     }
 
-    function loadIfPageIsTooShort() {
-      const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
-      if (remaining < 80) {
-        loadPrPage(prPage.nextOffset);
-      }
-    }
-
-    const frame = window.requestAnimationFrame(loadIfPageIsTooShort);
     window.addEventListener("scroll", loadNearBottom, { passive: true });
     window.addEventListener("resize", loadNearBottom);
 
     return () => {
-      window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", loadNearBottom);
       window.removeEventListener("resize", loadNearBottom);
     };
@@ -444,6 +445,7 @@ export default function PersonDetailPage({
             isLoading={isPrLoading}
             error={prError}
             onRetry={() => loadPrPage(prPage.nextOffset)}
+            onLoadMore={() => loadPrPage(prPage.nextOffset)}
             sentinelRef={sentinelRef}
           />
         </section>
