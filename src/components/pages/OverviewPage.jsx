@@ -27,6 +27,22 @@ function uniquePeopleByGithubId(items) {
   return [...uniqueItems.values()];
 }
 
+function roleRouteForPerson(person) {
+  const crewTime = person?.asCrew?.latestCrewActivityAt
+    ? new Date(person.asCrew.latestCrewActivityAt).getTime()
+    : null;
+  const reviewerTime = person?.asReviewer?.latestReviewAt
+    ? new Date(person.asReviewer.latestReviewAt).getTime()
+    : null;
+
+  if (Number.isFinite(crewTime) && Number.isFinite(reviewerTime)) {
+    return reviewerTime > crewTime ? "reviewer" : "crew";
+  }
+  if (Number.isFinite(reviewerTime)) return "reviewer";
+  if (Number.isFinite(crewTime)) return "crew";
+  return person.asCrew?.hasData ? "crew" : "reviewer";
+}
+
 export default function OverviewPage({
   data,
   loading,
@@ -51,7 +67,7 @@ export default function OverviewPage({
   }
 
   function handleSearchNavigate(person) {
-    onNavigate(person.asCrew?.hasData ? "crew" : "reviewer", person);
+    onNavigate(roleRouteForPerson(person), person);
   }
 
   return (

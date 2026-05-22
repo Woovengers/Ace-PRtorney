@@ -54,6 +54,13 @@ async function loadOverviewFromApi() {
     personStats: data.personStats ?? { people: peopleMap },
     summary: data.summary,
     recentActivity: data.recentActivity,
+    recentReferenceAt:
+      data.recentReferenceAt ??
+      data.summary?.recentReferenceAt ??
+      data.personStats?.recentReferenceAt ??
+      data.summary?.sourceGeneratedAt ??
+      data.summary?.latestActivityAt ??
+      null,
     source: data.source ?? "api",
   };
 }
@@ -78,6 +85,12 @@ async function loadOverviewFromPublicJson() {
     personStats,
     summary,
     recentActivity,
+    recentReferenceAt:
+      personStats.recentReferenceAt ??
+      summary.recentReferenceAt ??
+      summary.sourceGeneratedAt ??
+      summary.latestActivityAt ??
+      null,
     source: "public-json",
   };
 }

@@ -16,7 +16,12 @@ function candidateLabel(person) {
   return `${displayName(person)} · @${person.githubId}`;
 }
 
-export default function CandidateComparePage({ people, onSelectPerson }) {
+function recentReferenceLabel(recentReferenceAt) {
+  if (!recentReferenceAt) return "최근 기준일 없음";
+  return `최근 기준일 ${new Date(recentReferenceAt).toLocaleDateString("ko-KR")}`;
+}
+
+export default function CandidateComparePage({ data, people, onSelectPerson }) {
   const crewPeople = people.filter((person) => person.asCrew?.hasData);
   const reviewerPeople = people.filter((person) => person.asReviewer?.hasData);
   const [crew, setCrew] = useState(firstCrew(crewPeople));
@@ -24,10 +29,20 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
   const [candidateIds, setCandidateIds] = useState([]);
   const [apiResult, setApiResult] = useState(null);
   const [apiError, setApiError] = useState(null);
+  const recentReferenceAt =
+    apiResult?.recentReferenceAt ??
+    data?.recentReferenceAt ??
+    data?.summary?.recentReferenceAt ??
+    data?.summary?.sourceGeneratedAt ??
+    data?.summary?.latestActivityAt ??
+    null;
 
   const candidateMatches = useMemo(
-    () => compareReviewerCandidates(crew, people, candidateIds),
-    [crew, people, candidateIds],
+    () => compareReviewerCandidates(crew, people, candidateIds, {
+      requireRecentReviewerActivity: true,
+      recentReferenceAt,
+    }),
+    [crew, people, candidateIds, recentReferenceAt],
   );
   const result = apiResult ?? { crew, ...candidateMatches };
   const candidateSuggestions = reviewerPeople
@@ -71,6 +86,11 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
           candidateReviewerGithubIds: candidateIds,
         }),
       });
+      setApiResult(data);
+    } catch (error) {
+      setApiError(error);
+    }
+  }
 
   if (!crew) {
     return (
@@ -81,11 +101,6 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
         </Surface>
       </main>
     );
-  }
-      setApiResult(data);
-    } catch (error) {
-      setApiError(error);
-    }
   }
 
   return (
@@ -100,6 +115,9 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
           </h1>
           <p className="mt-6 text-base text-rp-muted">
             특정 크루에게 후보 리뷰어를 직접 넣고, 같은 기준으로 점수를 비교합니다.
+          </p>
+          <p className="mt-3 text-sm text-rp-subtle">
+            최근 30일 리뷰 활동이 없는 후보와 다른 트랙 후보는 제외됩니다. {recentReferenceLabel(recentReferenceAt)}
           </p>
         </section>
 
@@ -173,8 +191,8 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard title="Crew" value={displayName(crew)} note={displayMeta(crew)} glow="cyan" />
           <MetricCard title="Candidates" value={formatNumber(candidateIds.length)} note="selected reviewers" glow="purple" />
-          <MetricCard title="Included" value={formatNumber(result.matches.length)} note="same track candidates" glow="green" />
-          <MetricCard title="Excluded" value={formatNumber(result.excludedCandidates.length)} note="different track / no data" glow="yellow" />
+          <MetricCard title="Included" value={formatNumber(result.matches.length)} note="recent same-track candidates" glow="green" />
+          <MetricCard title="Excluded" value={formatNumber(result.excludedCandidates.length)} note="different track / inactive" glow="yellow" />
         </section>
 
         {result.excludedCandidates.length > 0 ? (

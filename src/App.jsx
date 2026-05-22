@@ -140,6 +140,7 @@ export default function App() {
           path="/matches/compare"
           element={
             <CandidateComparePage
+              data={data}
               people={people}
               onSelectPerson={setSelectedPerson}
             />

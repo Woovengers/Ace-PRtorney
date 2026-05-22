@@ -22,6 +22,7 @@ const TRACK_LABELS = {
 
 const HOUR_MS = 60 * 60 * 1000;
 const RECENT_LIMIT = 24;
+const RECENT_REVIEW_WINDOW_DAYS = 30;
 
 function emptyHours() {
   return Array.from({ length: 24 }, () => 0);
@@ -74,6 +75,28 @@ function maxDateIso(a, b) {
   return new Date(a) > new Date(b) ? a : b;
 }
 
+function clampFutureIso(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const now = new Date();
+  return (date > now ? now : date).toISOString();
+}
+
+function cutoffIso(referenceAt, days = RECENT_REVIEW_WINDOW_DAYS) {
+  if (!referenceAt) return null;
+  const date = new Date(referenceAt);
+  if (!Number.isFinite(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString();
+}
+
+function countSince(values, cutoff) {
+  if (!cutoff) return 0;
+  const cutoffTime = new Date(cutoff).getTime();
+  return values.filter((value) => new Date(value).getTime() >= cutoffTime).length;
+}
+
 function formatTrackMeta(person) {
   const parts = [];
   if (person.cohort) parts.push(`${person.cohort}기`);
@@ -97,6 +120,8 @@ function createPerson(githubId, member) {
       hasData: false,
       reviewedPRs: 0,
       reviewEvents: 0,
+      recent30dReviewCount: 0,
+      latestReviewAt: null,
       avgFirstResponseHours: null,
       avgRereviewHours: null,
       activityByHour: emptyHours(),
@@ -106,6 +131,7 @@ function createPerson(githubId, member) {
     asCrew: {
       hasData: false,
       totalPRs: 0,
+      latestCrewActivityAt: null,
       avgMissionHours: null,
       avgFirstReviewHours: null,
       avgReRequestHours: null,
@@ -118,6 +144,7 @@ function createPerson(githubId, member) {
       reviewerFirstResponseHours: [],
       reviewerRereviewHours: [],
       reviewedPrKeys: new Set(),
+      reviewerSubmittedAts: [],
       crewMissionHours: [],
       crewFirstReviewHours: [],
       crewReRequestHours: [],
@@ -222,6 +249,7 @@ async function main() {
 
     if (crew) {
       crew.asCrew.totalPRs += 1;
+      crew.asCrew.latestCrewActivityAt = maxDateIso(crew.asCrew.latestCrewActivityAt, pr.createdAt);
       addActivity(crew.asCrew, pr.createdAt);
       latestActivityAt = maxDateIso(latestActivityAt, pr.createdAt);
       recentCrew.push(
@@ -264,7 +292,9 @@ async function main() {
         if (!reviewer) continue;
 
         reviewer.asReviewer.reviewEvents += 1;
+        reviewer.asReviewer.latestReviewAt = maxDateIso(reviewer.asReviewer.latestReviewAt, review.submittedAt);
         reviewer._samples.reviewedPrKeys.add(prKey);
+        reviewer._samples.reviewerSubmittedAts.push(review.submittedAt);
         addActivity(reviewer.asReviewer, review.submittedAt);
 
         if (!firstResponseSeen.has(review.reviewer)) {
@@ -332,8 +362,11 @@ async function main() {
   }
 
   const peopleObject = {};
+  const recentReferenceAt = clampFutureIso(statsJson.generatedAt ?? latestActivityAt ?? generatedAt);
+  const recentCutoff = cutoffIso(recentReferenceAt);
   for (const [githubId, person] of [...people.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     person.asReviewer.reviewedPRs = person._samples.reviewedPrKeys.size;
+    person.asReviewer.recent30dReviewCount = countSince(person._samples.reviewerSubmittedAts, recentCutoff);
     person.asReviewer.avgFirstResponseHours = average(person._samples.reviewerFirstResponseHours);
     person.asReviewer.avgRereviewHours = average(person._samples.reviewerRereviewHours);
     person.asCrew.avgMissionHours = average(person._samples.crewMissionHours);
@@ -364,6 +397,7 @@ async function main() {
   const summary = {
     generatedAt,
     sourceGeneratedAt: statsJson.generatedAt ?? null,
+    recentReferenceAt,
     membersGeneratedAt: membersJson.generatedAt ?? null,
     latestActivityAt,
     totalPRs: prs.length,
@@ -379,6 +413,7 @@ async function main() {
   const personStats = {
     generatedAt,
     sourceGeneratedAt: statsJson.generatedAt ?? null,
+    recentReferenceAt,
     people: peopleObject,
   };
 
