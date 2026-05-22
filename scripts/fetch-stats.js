@@ -164,7 +164,7 @@ class TokenPool {
 }
 
 function getTokens() {
-  const raw = process.env.GITHUB_TOKENS || process.env.GITHUB_TOKEN || "";
+  const raw = process.env.GH_TOKENS || process.env.GITHUB_TOKENS || process.env.GITHUB_TOKEN || "";
   const tokens = raw
     .split(",")
     .map((token) => token.trim())
@@ -385,7 +385,7 @@ async function main() {
   const tokens = getTokens();
 
   if (tokens.length === 0) {
-    console.error(".env에 GITHUB_TOKENS 또는 GITHUB_TOKEN을 설정해주세요.");
+    console.error(".env에 GH_TOKENS, GITHUB_TOKENS 또는 GITHUB_TOKEN을 설정해주세요.");
     process.exit(1);
   }
 

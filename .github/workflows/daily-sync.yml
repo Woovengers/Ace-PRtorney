@@ -9,7 +9,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKENS: ${{ secrets.GITHUB_TOKENS }}
+      GH_TOKENS: ${{ secrets.GH_TOKENS }}
       DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
 
     steps:

@@ -269,7 +269,7 @@ person-stats.json 생성 후 softmoca, Gomding, Livenow14 기준으로 샘플 �
 필요한 환경변수:
 
 ```bash
-GITHUB_TOKENS=...
+GH_TOKENS=...
 SUPABASE_URL=...
 SUPABASE_PUBLISHABLE_KEY=...
 SUPABASE_ANON_KEY=...
@@ -703,19 +703,19 @@ jobs:
       - run: npm ci
       - run: npm run db:sync
         env:
-          GITHUB_TOKENS: ${{ secrets.GITHUB_TOKENS }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GH_TOKENS: ${{ secrets.GH_TOKENS }}
+          DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       - run: npm run db:build-summaries
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
 ```
 
 GitHub repository secrets에 넣을 값:
 
-- `GITHUB_TOKENS`
-- `DATABASE_URL`
+- `GH_TOKENS`
+- `DATABASE_POOLER_URL`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
@@ -931,7 +931,7 @@ vercel --prod
 
 주의:
 
-- 정적 JSON만 읽는 구조라면 `GITHUB_TOKENS`는 Vercel 환경변수에 올릴 필요가 없다.
+- 정적 JSON만 읽는 구조라면 `GH_TOKENS`는 Vercel 환경변수에 올릴 필요가 없다.
 - Vercel API route에서 Supabase를 조회한다면 `DATABASE_URL` 또는 `SUPABASE_SERVICE_ROLE_KEY`를 Vercel 서버 환경변수에 넣는다.
 - `SUPABASE_SERVICE_ROLE_KEY`는 절대 `VITE_` prefix를 붙이지 않는다.
 - 배포된 앱은 초기에는 생성된 `public/person-stats.json`과 `public/members.json`만 읽어도 된다.

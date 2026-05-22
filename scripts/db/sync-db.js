@@ -157,7 +157,7 @@ class TokenPool {
 }
 
 function getTokens() {
-  const raw = process.env.GITHUB_TOKENS || process.env.GITHUB_TOKEN || "";
+  const raw = process.env.GH_TOKENS || process.env.GITHUB_TOKENS || process.env.GITHUB_TOKEN || "";
   const tokens = raw
     .split(",")
     .map((token) => token.trim())
@@ -589,7 +589,7 @@ async function main() {
   const tokens = getTokens();
 
   if (tokens.length === 0) {
-    throw new Error("GITHUB_TOKENS or GITHUB_TOKEN is required");
+    throw new Error("GH_TOKENS, GITHUB_TOKENS, or GITHUB_TOKEN is required");
   }
 
   const tokenPool = new TokenPool(tokens);
