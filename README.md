@@ -1060,6 +1060,39 @@ npm run build를 통과시키고 dev server에서 실제 화면을 검증해줘.
 Vercel 배포 전에 필요한 설정, 환경변수, 제외해야 할 파일이 있으면 정리해줘.
 ```
 
+## 로컬 실행과 배포 전 검증
+
+UI 개발용 실행:
+
+```bash
+npm run dev
+```
+
+- Vite dev server로 실행한다.
+- 기본 데이터는 `public/*.json` fallback을 사용한다.
+- Supabase DB API route는 붙지 않으므로 PR Drilldown, 상세 최근 PR 목록 등 DB API 기반 영역은 제한적으로 보일 수 있다.
+
+DB API 포함 로컬 확인:
+
+```bash
+npx vercel dev
+```
+
+- Vercel Functions 방식으로 `api/*` route까지 함께 실행한다.
+- `.env`에 `DATABASE_POOLER_URL`이 필요하다.
+- 배포 환경에 가까운 검증은 이 모드에서 진행한다.
+
+Production build 확인:
+
+```bash
+npm run build
+```
+
+배포 전 필수 환경변수:
+
+- GitHub Actions secrets: `GH_TOKENS`, `DATABASE_POOLER_URL`
+- Vercel env: `DATABASE_POOLER_URL`
+
 ## 남은 의사결정
 
 다음은 내일 Plan Mode에서 확정하면 된다.

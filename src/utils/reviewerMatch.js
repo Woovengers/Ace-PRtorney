@@ -31,9 +31,10 @@ function activityScore(reviewEvents) {
   return Math.round(clamp(Math.log10(reviewEvents + 1) * 34));
 }
 
-function sameTrackScore(crew, reviewer) {
-  if (!crew.track || !reviewer.track) return 45;
-  return crew.track === reviewer.track ? 100 : 35;
+function sameTrackScore(crew, reviewer, includeDifferentTrackWithPenalty) {
+  if (!crew.track || !reviewer.track) return 70;
+  if (crew.track === reviewer.track) return 100;
+  return includeDifferentTrackWithPenalty ? 35 : 0;
 }
 
 function reasonFor(label, score) {
@@ -42,11 +43,27 @@ function reasonFor(label, score) {
   return `${label} 약함`;
 }
 
-export function calculateReviewerMatches(crew, people) {
+export function calculateReviewerMatches(crew, people, options = {}) {
   if (!crew?.asCrew?.hasData) return [];
 
+  const {
+    candidateReviewerGithubIds = null,
+    includeDifferentTrackWithPenalty = false,
+    sameTrackOnly = true,
+  } = options;
+  const candidateSet = candidateReviewerGithubIds
+    ? new Set(candidateReviewerGithubIds.filter(Boolean))
+    : null;
+
   return people
-    .filter((person) => person.githubId !== crew.githubId && person.asReviewer?.hasData)
+    .filter((person) => {
+      if (person.githubId === crew.githubId || !person.asReviewer?.hasData) return false;
+      if (candidateSet && !candidateSet.has(person.githubId)) return false;
+      if (sameTrackOnly && !includeDifferentTrackWithPenalty && crew.track && person.track !== crew.track) {
+        return false;
+      }
+      return true;
+    })
     .map((reviewer) => {
       const overlap = timeOverlapScore(
         crew.asCrew.activityByHour,
@@ -54,13 +71,13 @@ export function calculateReviewerMatches(crew, people) {
       );
       const firstReviewSpeed = speedScore(reviewer.asReviewer.avgFirstResponseHours, 48);
       const rereviewSpeed = speedScore(reviewer.asReviewer.avgRereviewHours, 36);
-      const trackFit = sameTrackScore(crew, reviewer);
+      const trackFit = sameTrackScore(crew, reviewer, includeDifferentTrackWithPenalty);
       const recentActivity = activityScore(reviewer.asReviewer.reviewEvents);
       const score = Math.round(
-        overlap * 0.35 +
+        overlap * 0.4 +
           firstReviewSpeed * 0.25 +
           rereviewSpeed * 0.2 +
-          trackFit * 0.15 +
+          trackFit * 0.1 +
           recentActivity * 0.05,
       );
 
@@ -78,9 +95,35 @@ export function calculateReviewerMatches(crew, people) {
           reasonFor("활동 시간대", overlap),
           reasonFor("첫 리뷰 속도", firstReviewSpeed),
           reasonFor("재리뷰 속도", rereviewSpeed),
-          trackFit >= 80 ? "같은 트랙 경험" : "다른 트랙 중심",
+          trackFit >= 80 ? "같은 트랙 경험" : "다른 트랙 후보",
         ],
       };
     })
     .sort((a, b) => b.score - a.score || b.reviewer.asReviewer.reviewEvents - a.reviewer.asReviewer.reviewEvents);
+}
+
+export function compareReviewerCandidates(crew, people, candidateReviewerGithubIds, options = {}) {
+  const candidateSet = new Set(candidateReviewerGithubIds.filter(Boolean));
+  const excludedCandidates = people
+    .filter((person) => candidateSet.has(person.githubId))
+    .filter((person) => {
+      if (!person.asReviewer?.hasData) return true;
+      if (options.includeDifferentTrackWithPenalty) return false;
+      return crew?.track && person.track !== crew.track;
+    })
+    .map((person) => ({
+      githubId: person.githubId,
+      displayName: person.displayName ?? person.nickname ?? person.githubId,
+      track: person.track,
+      reason: person.asReviewer?.hasData ? "different track" : "no reviewer data",
+    }));
+
+  return {
+    matches: calculateReviewerMatches(crew, people, {
+      candidateReviewerGithubIds,
+      includeDifferentTrackWithPenalty: options.includeDifferentTrackWithPenalty ?? false,
+      sameTrackOnly: true,
+    }),
+    excludedCandidates,
+  };
 }

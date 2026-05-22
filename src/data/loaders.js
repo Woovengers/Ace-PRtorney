@@ -1,4 +1,5 @@
 import { REVIEWPACE_REPOS } from "../config/repos.js";
+import { fetchJson, shouldUseApi } from "./api.js";
 
 async function loadJson(path) {
   const response = await fetch(path);
@@ -8,22 +9,8 @@ async function loadJson(path) {
   return response.json();
 }
 
-const USE_OVERVIEW_API =
-  import.meta.env.PROD || import.meta.env.VITE_USE_DB_API === "true";
-
 async function loadApiJson(path) {
-  const response = await fetch(path, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!response.ok || !contentType.includes("application/json")) {
-    throw new Error(`${path} API 사용 불가`);
-  }
-
-  return response.json();
+  return fetchJson(path);
 }
 
 function sortPeople(peopleMap) {
@@ -96,7 +83,7 @@ async function loadOverviewFromPublicJson() {
 }
 
 export async function loadOverviewData() {
-  if (!USE_OVERVIEW_API) {
+  if (!shouldUseApi()) {
     return loadOverviewFromPublicJson();
   }
 

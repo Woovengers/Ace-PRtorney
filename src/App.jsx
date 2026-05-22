@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { loadOverviewData } from "./data/loaders.js";
+import CandidateComparePage from "./components/pages/CandidateComparePage.jsx";
 import MissionBoardPage from "./components/pages/MissionBoardPage.jsx";
 import MissionDetailPage from "./components/pages/MissionDetailPage.jsx";
 import OverviewPage from "./components/pages/OverviewPage.jsx";
 import PersonDetailPage from "./components/pages/PersonDetailPage.jsx";
-import PlaceholderPage from "./components/pages/PlaceholderPage.jsx";
+import PrDrilldownPage from "./components/pages/PrDrilldownPage.jsx";
 import ReviewerMatchPage from "./components/pages/ReviewerMatchPage.jsx";
 import TrackComparePage from "./components/pages/TrackComparePage.jsx";
 
@@ -128,7 +129,16 @@ export default function App() {
       <Route path="/missions" element={<MissionBoardPage data={data} loading={!data} />} />
       <Route path="/missions/:owner/:name" element={<MissionDetailPage data={data} loading={!data} />} />
       <Route path="/compare" element={<TrackComparePage data={data} loading={!data} />} />
-      <Route path="/matches/compare" element={<PlaceholderPage type="matches" />} />
+      <Route
+        path="/matches/compare"
+        element={
+          <CandidateComparePage
+            people={people}
+            selectedPerson={selectedPerson}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
       <Route
         path="/matches"
         element={
@@ -155,6 +165,7 @@ export default function App() {
           />
         }
       />
+      <Route path="/prs/:owner/:repo/:number" element={<PrDrilldownPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

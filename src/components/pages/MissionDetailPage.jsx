@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import MetricCard from "../common/MetricCard.jsx";
 import Surface from "../common/Surface.jsx";
-import { formatNumber, formatShortDate } from "../../utils/time.js";
+import { fetchJson, shouldUseApi } from "../../data/api.js";
+import { formatHours, formatNumber, formatShortDate } from "../../utils/time.js";
 
 function missionPath(repo) {
   return `/missions/${repo.owner}/${repo.name}`;
@@ -26,6 +28,30 @@ function LoadingState() {
 export default function MissionDetailPage({ data, loading }) {
   const { owner, name } = useParams();
   const repositories = data?.repositories ?? [];
+  const [detail, setDetail] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDetail(null);
+
+    if (!owner || !name || !shouldUseApi()) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchJson(`/api/repos/${owner}/${name}`)
+      .then((payload) => {
+        if (!cancelled) setDetail(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setDetail(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [owner, name]);
 
   if (loading) return <LoadingState />;
 
@@ -120,6 +146,65 @@ export default function MissionDetailPage({ data, loading }) {
             </p>
           </Surface>
         </section>
+
+        {detail?.recentPrs?.length ? (
+          <section className="mt-[58px] grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <Surface glow="green" className="p-5">
+              <h2 className="text-base font-extrabold text-rp-text">Recent PRs</h2>
+              <div className="mt-5 divide-y divide-rp-line">
+                {detail.recentPrs.map((pr) => (
+                  <Link
+                    key={`${pr.repoFullName}#${pr.prNumber}`}
+                    to={pr.path}
+                    className="grid gap-3 py-4 first:pt-0 last:pb-0 md:grid-cols-[1fr_260px]"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-rp-text">
+                        #{pr.prNumber} {pr.title}
+                      </p>
+                      <p className="mt-1 text-xs text-rp-subtle">
+                        {pr.author} · {formatShortDate(pr.createdAt)}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-right text-xs">
+                      <span className="text-rp-green">first {formatHours(pr.firstReviewHours)}</span>
+                      <span className="text-rp-yellow">done {formatHours(pr.completionHours)}</span>
+                      <span className="text-rp-purple">rounds {formatNumber(pr.rounds)}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </Surface>
+
+            <Surface glow="purple" className="p-5">
+              <h2 className="text-base font-extrabold text-rp-text">Top People</h2>
+              <div className="mt-5 grid gap-6">
+                <div>
+                  <p className="text-xs font-semibold text-rp-green">Reviewers</p>
+                  <div className="mt-3 space-y-2">
+                    {(detail.topReviewers ?? []).map((person) => (
+                      <p key={person.github_id} className="flex justify-between gap-4 text-sm">
+                        <span className="truncate text-rp-muted">@{person.github_id}</span>
+                        <span className="font-semibold text-rp-text">{formatNumber(person.events)}</span>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-rp-cyan">Crew</p>
+                  <div className="mt-3 space-y-2">
+                    {(detail.topCrew ?? []).map((person) => (
+                      <p key={person.github_id} className="flex justify-between gap-4 text-sm">
+                        <span className="truncate text-rp-muted">@{person.github_id}</span>
+                        <span className="font-semibold text-rp-text">{formatNumber(person.prs)}</span>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Surface>
+          </section>
+        ) : null}
       </div>
     </main>
   );

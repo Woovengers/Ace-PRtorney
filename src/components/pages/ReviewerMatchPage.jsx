@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import ActivityBars from "../charts/ActivityBars.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
+import { fetchJson, shouldUseApi } from "../../data/api.js";
 import { calculateReviewerMatches } from "../../utils/reviewerMatch.js";
 import { displayMeta, displayName, personInitial } from "../../utils/person.js";
 import { formatHours, formatNumber } from "../../utils/time.js";
@@ -131,17 +132,39 @@ export default function ReviewerMatchPage({
 }) {
   const { githubId } = useParams();
   const [limit, setLimit] = useState(8);
-
-  if (loading) return <LoadingState />;
-
+  const [serverMatches, setServerMatches] = useState(null);
   const crewPeople = people.filter((person) => person.asCrew?.hasData);
   const fallbackCrew = firstCrew(crewPeople);
-  if (!githubId && fallbackCrew) return <Navigate to={`/matches/${fallbackCrew.githubId}`} replace />;
-
   const crew = data?.peopleMap?.[githubId] ?? fallbackCrew;
+
+  useEffect(() => {
+    let cancelled = false;
+    setServerMatches(null);
+
+    if (!crew?.githubId || !shouldUseApi()) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchJson(`/api/matches/${crew.githubId}`)
+      .then((payload) => {
+        if (!cancelled) setServerMatches(payload.matches ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setServerMatches(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [crew?.githubId]);
+
+  if (loading) return <LoadingState />;
+  if (!githubId && fallbackCrew) return <Navigate to={`/matches/${fallbackCrew.githubId}`} replace />;
   if (!crew) return <Navigate to="/" replace />;
 
-  const matches = calculateReviewerMatches(crew, people);
+  const matches = serverMatches ?? calculateReviewerMatches(crew, people, { sameTrackOnly: true });
   const visibleMatches = matches.slice(0, limit);
   const topMatch = matches[0];
 
@@ -171,6 +194,9 @@ export default function ReviewerMatchPage({
           <p className="mt-6 text-base text-rp-muted">
             크루의 활동 리듬과 리뷰어의 응답 패턴을 비교해 리뷰어 후보를 추천합니다.
           </p>
+          <p className="mt-3 text-sm text-rp-subtle">
+            리뷰 품질이 아닌 활동 시간대와 응답 이력을 기준으로 한 추천입니다.
+          </p>
         </section>
 
         <section className="mt-8 max-w-3xl">
@@ -199,10 +225,10 @@ export default function ReviewerMatchPage({
           <Surface glow="purple" className="p-5">
             <h2 className="text-base font-extrabold text-rp-text">Scoring Weights</h2>
             <div className="mt-5 space-y-4">
-              <ScoreBar label="Activity overlap" value={35} glow="cyan" />
+              <ScoreBar label="Activity overlap" value={40} glow="cyan" />
               <ScoreBar label="First response" value={25} glow="green" />
               <ScoreBar label="Rereview speed" value={20} glow="purple" />
-              <ScoreBar label="Same track" value={15} glow="yellow" />
+              <ScoreBar label="Same track" value={10} glow="yellow" />
               <ScoreBar label="Review activity" value={5} glow="green" />
             </div>
           </Surface>

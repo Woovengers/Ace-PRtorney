@@ -1,11 +1,13 @@
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import ActivityBars from "../charts/ActivityBars.jsx";
 import HeatmapGrid from "../charts/HeatmapGrid.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
+import { fetchJson, shouldUseApi } from "../../data/api.js";
 import { displayMeta, displayName, personInitial } from "../../utils/person.js";
-import { formatHours, formatNumber } from "../../utils/time.js";
+import { formatHours, formatNumber, formatShortDate } from "../../utils/time.js";
 
 const HOUR_LABELS = Array.from({ length: 24 }, (_, hour) => (hour % 3 === 0 ? `${hour}` : ""));
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -106,6 +108,39 @@ function StatNarrative({ mode, stats }) {
   );
 }
 
+function RecentPrList({ title, prs }) {
+  if (!prs?.length) return null;
+
+  return (
+    <Surface glow="green" className="p-5">
+      <h2 className="text-base font-extrabold text-rp-text">{title}</h2>
+      <div className="mt-5 divide-y divide-rp-line">
+        {prs.map((pr) => (
+          <Link
+            key={`${pr.repoFullName}#${pr.prNumber}`}
+            to={pr.path}
+            className="grid gap-3 py-4 first:pt-0 last:pb-0 md:grid-cols-[1fr_280px]"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-rp-text">
+                #{pr.prNumber} {pr.title}
+              </p>
+              <p className="mt-1 truncate text-xs text-rp-subtle">
+                {pr.repoFullName} · {formatShortDate(pr.createdAt)}
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-right text-xs">
+              <span className="text-rp-green">first {formatHours(pr.firstReviewHours)}</span>
+              <span className="text-rp-yellow">done {formatHours(pr.completionHours)}</span>
+              <span className="text-rp-purple">rounds {formatNumber(pr.rounds)}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </Surface>
+  );
+}
+
 export default function PersonDetailPage({
   data,
   loading,
@@ -116,6 +151,30 @@ export default function PersonDetailPage({
   onNavigate,
 }) {
   const { githubId } = useParams();
+  const [detail, setDetail] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDetail(null);
+
+    if (!githubId || !shouldUseApi()) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchJson(`/api/people/${githubId}`)
+      .then((payload) => {
+        if (!cancelled) setDetail(payload);
+      })
+      .catch(() => {
+        if (!cancelled) setDetail(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [githubId]);
 
   if (loading) return <LoadingState />;
   if (!githubId) return <EmptyState mode={mode} people={people} />;
@@ -251,6 +310,13 @@ export default function PersonDetailPage({
         <section className="mt-[58px] grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
           <HeatmapGrid title="KST Activity Heatmap" values={stats.activityHeatmap ?? []} glow={glow} />
           <StatNarrative mode={mode} stats={stats} />
+        </section>
+
+        <section className="mt-[58px]">
+          <RecentPrList
+            title={mode === "crew" ? "Recent Crew PRs" : "Recent Reviewed PRs"}
+            prs={mode === "crew" ? detail?.recentCrewPrs : detail?.recentReviewedPrs}
+          />
         </section>
       </div>
     </main>
