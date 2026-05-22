@@ -548,7 +548,7 @@ function ProsecutorStep({
   );
 }
 
-function AttorneyStep({ trialData, selectedComment, reply, githubSession, attorneyName, onBack }) {
+function AttorneyStep({ trialData, selectedComment, reply, githubSession, attorneyName, onBack, onBackToEvidence }) {
   const [posting, setPosting] = useState(false);
   const [postResult, setPostResult] = useState(null);
   const [postError, setPostError] = useState(null);
@@ -589,10 +589,13 @@ function AttorneyStep({ trialData, selectedComment, reply, githubSession, attorn
             <button type="button" onClick={onBack} className="h-10 rounded-lg border border-rp-line bg-rp-panel2 px-8 text-sm font-semibold text-rp-text">
               수정하기
             </button>
+            <button type="button" onClick={onBackToEvidence} className="h-10 rounded-lg border border-rp-line bg-rp-panel2 px-8 text-sm font-semibold text-rp-text">
+              증거 코드 diff로 돌아가기
+            </button>
             <button
               type="button"
               onClick={handlePostReply}
-              disabled={!githubSession?.authenticated || posting || Boolean(selectedComment.inReplyToId)}
+              disabled={!githubSession?.authenticated || posting || !finalReply || Boolean(selectedComment.inReplyToId)}
               className="h-10 rounded-lg bg-rp-text px-8 text-sm font-semibold text-rp-bg disabled:cursor-not-allowed disabled:opacity-50"
             >
               {posting ? "게시 중" : "GitHub에 답글 게시"}
@@ -882,6 +885,7 @@ export default function TrialPage() {
               githubSession={githubSession}
               attorneyName={attorneyName}
               onBack={() => setStage("prosecutor")}
+              onBackToEvidence={() => setStage("evidence")}
             />
           </section>
         ) : null}
