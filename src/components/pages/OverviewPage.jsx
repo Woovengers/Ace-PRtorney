@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import AppHeader from "../common/AppHeader.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
@@ -62,21 +62,7 @@ export default function OverviewPage({
 
   return (
     <main className="page-grid min-h-screen overflow-x-hidden text-rp-text">
-      <header className="sticky top-0 z-30 border-b border-rp-line/70 bg-rp-bg/92 backdrop-blur">
-        <div className="mx-auto flex h-[76px] w-full max-w-[1440px] items-center px-6 md:px-12">
-          <Link to="/" className="text-lg font-extrabold">
-            Review Pace
-          </Link>
-          <nav className="ml-auto hidden items-center gap-5 text-[13px] text-rp-subtle md:flex">
-            <Link to="/" className="font-semibold text-rp-text">Overview</Link>
-            <Link to="/crew" className="hover:text-rp-text">Crew</Link>
-            <Link to="/reviewer" className="hover:text-rp-text">Reviewers</Link>
-            <Link to="/missions" className="hover:text-rp-text">Missions</Link>
-            <Link to="/matches" className="hover:text-rp-text">Match</Link>
-            <span>PRs</span>
-          </nav>
-        </div>
-      </header>
+      <AppHeader active="overview" />
 
       <div className="mx-auto w-full max-w-[1440px] px-6 pb-16 pt-12 md:px-[54px]">
         <section className="max-w-3xl">

@@ -21,8 +21,8 @@ export default function ActivityBars({ title, values = [], labels, glow = "purpl
       </div>
       <div className="mt-5 grid h-36 grid-cols-[repeat(var(--bar-count),minmax(0,1fr))] items-end gap-1" style={{ "--bar-count": values.length }}>
         {values.map((value, index) => (
-          <div key={`${labels?.[index] ?? index}-${index}`} className="flex min-w-0 flex-col items-center gap-2">
-            <div className="flex h-28 w-full items-end rounded-sm bg-rp-panel2">
+          <div key={`${labels?.[index] ?? index}-${index}`} className="grid h-36 min-w-0 grid-rows-[112px_16px] items-end gap-2">
+            <div className="flex h-full w-full items-end rounded-sm bg-rp-panel2">
               <div
                 className={cn(
                   "w-full rounded-sm transition",
@@ -35,7 +35,9 @@ export default function ActivityBars({ title, values = [], labels, glow = "purpl
                 title={`${labels?.[index] ?? index}: ${value}`}
               />
             </div>
-            <span className="truncate text-[10px] text-rp-subtle">{labels?.[index] ?? index}</span>
+            <span className="block h-4 truncate text-center text-[10px] leading-4 text-rp-subtle">
+              {labels?.[index] ?? index}
+            </span>
           </div>
         ))}
       </div>

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import AppHeader from "../common/AppHeader.jsx";
 import Surface from "../common/Surface.jsx";
 
 const titles = {
@@ -8,13 +9,7 @@ const titles = {
 export default function PlaceholderPage({ type = "missions" }) {
   return (
     <main className="page-grid min-h-screen text-rp-text">
-      <header className="sticky top-0 z-30 border-b border-rp-line/70 bg-rp-bg/92 backdrop-blur">
-        <div className="mx-auto flex h-[76px] w-full max-w-[1440px] items-center px-6 md:px-12">
-          <Link to="/" className="text-lg font-extrabold">
-            Review Pace
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
       <div className="mx-auto grid min-h-[calc(100vh-76px)] w-full max-w-[1440px] place-items-center px-6 py-16 md:px-[54px]">
         <Surface glow="yellow" className="max-w-lg p-6">
           <p className="text-xs font-semibold text-rp-yellow">NEXT STEP</p>

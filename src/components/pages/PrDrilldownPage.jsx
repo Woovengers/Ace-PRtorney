@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import AppHeader from "../common/AppHeader.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import Surface from "../common/Surface.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
@@ -105,18 +106,7 @@ export default function PrDrilldownPage() {
 
   return (
     <main className="page-grid min-h-screen overflow-x-hidden text-rp-text">
-      <header className="sticky top-0 z-30 border-b border-rp-line/70 bg-rp-bg/92 backdrop-blur">
-        <div className="mx-auto flex h-[76px] w-full max-w-[1440px] items-center px-6 md:px-12">
-          <Link to="/" className="text-lg font-extrabold">
-            Review Pace
-          </Link>
-          <nav className="ml-auto hidden items-center gap-5 text-[13px] text-rp-subtle md:flex">
-            <Link to="/" className="hover:text-rp-text">Overview</Link>
-            <Link to="/missions" className="hover:text-rp-text">Missions</Link>
-            <Link to="/matches" className="hover:text-rp-text">Match</Link>
-          </nav>
-        </div>
-      </header>
+      <AppHeader active="prs" />
 
       <div className="mx-auto w-full max-w-[1440px] px-6 pb-16 pt-10 md:px-[54px]">
         {error ? (
