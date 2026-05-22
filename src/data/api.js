@@ -9,7 +9,8 @@ export async function fetchJson(path, options) {
 
   const contentType = response.headers.get("content-type") ?? "";
   if (!response.ok || !contentType.includes("application/json")) {
-    throw new Error(`${path} API request failed`);
+    const payload = contentType.includes("application/json") ? await response.json().catch(() => null) : null;
+    throw new Error(payload?.message || `${path} API request failed`);
   }
 
   return response.json();

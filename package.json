@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:full": "node scripts/dev-server.js",
     "build": "vite build",
     "preview": "vite preview",
     "fetch:members": "node scripts/fetch-members.js",
