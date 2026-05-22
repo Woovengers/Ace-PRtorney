@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { loadOverviewData } from "./data/loaders.js";
 import OverviewPage from "./components/pages/OverviewPage.jsx";
+import PersonDetailPage from "./components/pages/PersonDetailPage.jsx";
+import PlaceholderPage from "./components/pages/PlaceholderPage.jsx";
 
 export default function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [selectedPerson, setSelectedPerson] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -28,9 +32,9 @@ export default function App() {
   function handleNavigate(route, payload) {
     if (payload?.githubId) {
       setSelectedPerson(payload);
-      window.history.replaceState(null, "", `#${route}/${payload.githubId}`);
+      navigate(`/${route}/${payload.githubId}`);
     } else {
-      window.history.replaceState(null, "", `#${route}`);
+      navigate(`/${route}`);
     }
   }
 
@@ -47,13 +51,80 @@ export default function App() {
   }
 
   return (
-    <OverviewPage
-      data={data}
-      loading={!data}
-      people={people}
-      selectedPerson={selectedPerson}
-      onNavigate={handleNavigate}
-      onSelectPerson={setSelectedPerson}
-    />
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <OverviewPage
+            data={data}
+            loading={!data}
+            people={people}
+            selectedPerson={selectedPerson}
+            onNavigate={handleNavigate}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
+      <Route
+        path="/crew"
+        element={
+          <PersonDetailPage
+            data={data}
+            loading={!data}
+            mode="crew"
+            people={people}
+            selectedPerson={selectedPerson}
+            onNavigate={handleNavigate}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
+      <Route
+        path="/crew/:githubId"
+        element={
+          <PersonDetailPage
+            data={data}
+            loading={!data}
+            mode="crew"
+            people={people}
+            selectedPerson={selectedPerson}
+            onNavigate={handleNavigate}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
+      <Route
+        path="/reviewer"
+        element={
+          <PersonDetailPage
+            data={data}
+            loading={!data}
+            mode="reviewer"
+            people={people}
+            selectedPerson={selectedPerson}
+            onNavigate={handleNavigate}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
+      <Route
+        path="/reviewer/:githubId"
+        element={
+          <PersonDetailPage
+            data={data}
+            loading={!data}
+            mode="reviewer"
+            people={people}
+            selectedPerson={selectedPerson}
+            onNavigate={handleNavigate}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
+      <Route path="/missions" element={<PlaceholderPage type="missions" />} />
+      <Route path="/compare" element={<PlaceholderPage type="compare" />} />
+      <Route path="/matches" element={<PlaceholderPage type="matches" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import Surface from "./Surface.jsx";
 import { displayMeta, displayName } from "../../utils/person.js";
 
-export default function SearchBox({ people, selectedPerson, onSelectPerson }) {
+export default function SearchBox({ people, selectedPerson, onSelectPerson, onPersonNavigate }) {
   const [query, setQuery] = useState("");
 
   const matches = useMemo(() => {
@@ -23,6 +23,7 @@ export default function SearchBox({ people, selectedPerson, onSelectPerson }) {
   function selectPerson(person) {
     onSelectPerson(person);
     setQuery(displayName(person));
+    onPersonNavigate?.(person);
   }
 
   return (
@@ -55,7 +56,7 @@ export default function SearchBox({ people, selectedPerson, onSelectPerson }) {
             <button
               key={person.githubId}
               type="button"
-              className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-rp-panel2"
+              className="flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-rp-panel2"
               onClick={() => selectPerson(person)}
             >
               <span>

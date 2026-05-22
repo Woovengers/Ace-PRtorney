@@ -15,6 +15,13 @@ export function formatShortDate(iso) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
 }
 
+export function formatHours(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "-";
+  if (value < 1) return `${Math.round(value * 60)}m`;
+  if (value < 24) return `${Math.round(value * 10) / 10}h`;
+  return `${Math.round((value / 24) * 10) / 10}d`;
+}
+
 export function relativeTime(iso) {
   if (!iso) return "-";
   const diff = Math.max(Date.now() - new Date(iso).getTime(), 0);
