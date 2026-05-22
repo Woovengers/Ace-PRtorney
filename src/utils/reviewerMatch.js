@@ -31,6 +31,29 @@ function activityScore(reviewEvents) {
   return Math.round(clamp(Math.log10(reviewEvents + 1) * 34));
 }
 
+function cutoffTime(referenceAt, days) {
+  if (!referenceAt) return null;
+  const date = new Date(referenceAt);
+  if (!Number.isFinite(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.getTime();
+}
+
+function recentReviewCount(reviewer, options) {
+  const count = reviewer?.asReviewer?.recent30dReviewCount;
+  if (Number.isFinite(count)) return count;
+
+  const latestReviewAt = reviewer?.asReviewer?.latestReviewAt;
+  const cutoff = cutoffTime(options.recentReferenceAt, options.recentWindowDays);
+  if (!latestReviewAt || cutoff === null) return 0;
+  return new Date(latestReviewAt).getTime() >= cutoff ? 1 : 0;
+}
+
+function hasRecentReviewerActivity(reviewer, options) {
+  if (!options.requireRecentReviewerActivity) return true;
+  return recentReviewCount(reviewer, options) > 0;
+}
+
 function sameTrackScore(crew, reviewer, includeDifferentTrackWithPenalty) {
   if (!crew.track || !reviewer.track) return 70;
   if (crew.track === reviewer.track) return 100;
@@ -50,7 +73,11 @@ export function calculateReviewerMatches(crew, people, options = {}) {
     candidateReviewerGithubIds = null,
     includeDifferentTrackWithPenalty = false,
     sameTrackOnly = true,
+    requireRecentReviewerActivity = false,
+    recentWindowDays = 30,
+    recentReferenceAt = null,
   } = options;
+  const matchOptions = { requireRecentReviewerActivity, recentWindowDays, recentReferenceAt };
   const candidateSet = candidateReviewerGithubIds
     ? new Set(candidateReviewerGithubIds.filter(Boolean))
     : null;
@@ -59,6 +86,7 @@ export function calculateReviewerMatches(crew, people, options = {}) {
     .filter((person) => {
       if (person.githubId === crew.githubId || !person.asReviewer?.hasData) return false;
       if (candidateSet && !candidateSet.has(person.githubId)) return false;
+      if (!hasRecentReviewerActivity(person, matchOptions)) return false;
       if (sameTrackOnly && !includeDifferentTrackWithPenalty && crew.track && person.track !== crew.track) {
         return false;
       }
@@ -72,7 +100,8 @@ export function calculateReviewerMatches(crew, people, options = {}) {
       const firstReviewSpeed = speedScore(reviewer.asReviewer.avgFirstResponseHours, 48);
       const rereviewSpeed = speedScore(reviewer.asReviewer.avgRereviewHours, 36);
       const trackFit = sameTrackScore(crew, reviewer, includeDifferentTrackWithPenalty);
-      const recentActivity = activityScore(reviewer.asReviewer.reviewEvents);
+      const recent30dReviewCount = recentReviewCount(reviewer, matchOptions);
+      const recentActivity = activityScore(recent30dReviewCount || reviewer.asReviewer.reviewEvents);
       const score = Math.round(
         overlap * 0.4 +
           firstReviewSpeed * 0.25 +
@@ -96,6 +125,7 @@ export function calculateReviewerMatches(crew, people, options = {}) {
           reasonFor("첫 리뷰 속도", firstReviewSpeed),
           reasonFor("재리뷰 속도", rereviewSpeed),
           trackFit >= 80 ? "같은 트랙 경험" : "다른 트랙 후보",
+          `${recentWindowDays}일 내 리뷰 ${recent30dReviewCount}건`,
         ],
       };
     })
@@ -104,10 +134,16 @@ export function calculateReviewerMatches(crew, people, options = {}) {
 
 export function compareReviewerCandidates(crew, people, candidateReviewerGithubIds, options = {}) {
   const candidateSet = new Set(candidateReviewerGithubIds.filter(Boolean));
+  const matchOptions = {
+    requireRecentReviewerActivity: options.requireRecentReviewerActivity ?? false,
+    recentWindowDays: options.recentWindowDays ?? 30,
+    recentReferenceAt: options.recentReferenceAt ?? null,
+  };
   const excludedCandidates = people
     .filter((person) => candidateSet.has(person.githubId))
     .filter((person) => {
       if (!person.asReviewer?.hasData) return true;
+      if (!hasRecentReviewerActivity(person, matchOptions)) return true;
       if (options.includeDifferentTrackWithPenalty) return false;
       return crew?.track && person.track !== crew.track;
     })
@@ -115,7 +151,11 @@ export function compareReviewerCandidates(crew, people, candidateReviewerGithubI
       githubId: person.githubId,
       displayName: person.displayName ?? person.nickname ?? person.githubId,
       track: person.track,
-      reason: person.asReviewer?.hasData ? "different track" : "no reviewer data",
+      reason: !person.asReviewer?.hasData
+        ? "no reviewer data"
+        : !hasRecentReviewerActivity(person, matchOptions)
+          ? "no recent reviewer activity"
+          : "different track",
     }));
 
   return {
@@ -123,6 +163,9 @@ export function compareReviewerCandidates(crew, people, candidateReviewerGithubI
       candidateReviewerGithubIds,
       includeDifferentTrackWithPenalty: options.includeDifferentTrackWithPenalty ?? false,
       sameTrackOnly: true,
+      requireRecentReviewerActivity: matchOptions.requireRecentReviewerActivity,
+      recentWindowDays: matchOptions.recentWindowDays,
+      recentReferenceAt: matchOptions.recentReferenceAt,
     }),
     excludedCandidates,
   };

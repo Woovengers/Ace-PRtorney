@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import ActivityBars from "../charts/ActivityBars.jsx";
 import AppHeader from "../common/AppHeader.jsx";
+import MatchModeTabs from "../common/MatchModeTabs.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
@@ -30,6 +31,11 @@ function LoadingState() {
   );
 }
 
+function recentReferenceLabel(recentReferenceAt) {
+  if (!recentReferenceAt) return "최근 기준일 없음";
+  return `최근 기준일 ${new Date(recentReferenceAt).toLocaleDateString("ko-KR")}`;
+}
+
 function ScoreBar({ label, value, glow = "purple" }) {
   const color =
     glow === "green"
@@ -50,6 +56,50 @@ function ScoreBar({ label, value, glow = "purple" }) {
         <div className={`h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
       </div>
     </div>
+  );
+}
+
+function MatchLanding({ crewPeople, onSelectPerson, onNavigate }) {
+  return (
+    <main className="page-grid min-h-screen overflow-x-hidden text-rp-text">
+      <AppHeader active="match" />
+
+      <div className="mx-auto w-full max-w-[1440px] px-6 pb-16 pt-12 md:px-[54px]">
+        <section className="max-w-3xl">
+          <p className="text-xs font-semibold text-rp-purple">REVIEWER MATCH</p>
+          <h1 className="mt-3 text-[46px] font-extrabold leading-none md:text-[72px]">
+            Reviewer Match
+          </h1>
+          <p className="mt-6 text-base text-rp-muted">
+            크루를 검색해 최근 한 달 동안 리뷰 활동이 있는 같은 트랙 리뷰어를 추천받거나,
+            후보 리뷰어를 직접 추가해 비교하세요.
+          </p>
+          <MatchModeTabs active="auto" />
+        </section>
+
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div>
+            <SearchBox
+              people={crewPeople}
+              onSelectPerson={onSelectPerson}
+              onPersonNavigate={(person) => onNavigate("matches", person)}
+            />
+          </div>
+          <Surface glow="green" className="p-5">
+            <h2 className="text-base font-extrabold text-rp-text">Candidate Compare</h2>
+            <p className="mt-3 text-sm text-rp-muted">
+              크루와 후보 리뷰어를 직접 고르고 같은 기준으로 점수를 비교합니다.
+            </p>
+            <Link
+              to="/matches/compare"
+              className="mt-5 inline-flex rounded-md border border-rp-line bg-rp-panel2 px-4 py-3 text-sm font-semibold text-rp-text transition hover:bg-rp-panel"
+            >
+              후보 직접 비교
+            </Link>
+          </Surface>
+        </section>
+      </div>
+    </main>
   );
 }
 
@@ -110,7 +160,7 @@ function ReviewerCard({ match, rank }) {
           <p className="text-lg font-extrabold text-rp-purple">
             {formatHours(reviewer.asReviewer.avgRereviewHours)}
           </p>
-          <p className="mt-1 text-[10px] text-rp-subtle">avg rereview</p>
+          <p className="mt-1 text-[10px] text-rp-subtle">median rereview</p>
         </div>
         <div>
           <p className="text-lg font-extrabold text-rp-yellow">
@@ -134,13 +184,21 @@ export default function ReviewerMatchPage({
   const { githubId } = useParams();
   const [limit, setLimit] = useState(8);
   const [serverMatches, setServerMatches] = useState(null);
+  const [serverRecentReferenceAt, setServerRecentReferenceAt] = useState(null);
   const crewPeople = people.filter((person) => person.asCrew?.hasData);
-  const fallbackCrew = firstCrew(crewPeople);
-  const crew = data?.peopleMap?.[githubId] ?? fallbackCrew;
+  const crew = githubId ? data?.peopleMap?.[githubId] : null;
+  const recentReferenceAt =
+    serverRecentReferenceAt ??
+    data?.recentReferenceAt ??
+    data?.summary?.recentReferenceAt ??
+    data?.summary?.sourceGeneratedAt ??
+    data?.summary?.latestActivityAt ??
+    null;
 
   useEffect(() => {
     let cancelled = false;
     setServerMatches(null);
+    setServerRecentReferenceAt(null);
 
     if (!crew?.githubId || !shouldUseApi()) {
       return () => {
@@ -150,7 +208,10 @@ export default function ReviewerMatchPage({
 
     fetchJson(`/api/matches/${crew.githubId}`)
       .then((payload) => {
-        if (!cancelled) setServerMatches(payload.matches ?? null);
+        if (!cancelled) {
+          setServerMatches(payload.matches ?? null);
+          setServerRecentReferenceAt(payload.recentReferenceAt ?? null);
+        }
       })
       .catch(() => {
         if (!cancelled) setServerMatches(null);
@@ -162,10 +223,22 @@ export default function ReviewerMatchPage({
   }, [crew?.githubId]);
 
   if (loading) return <LoadingState />;
-  if (!githubId && fallbackCrew) return <Navigate to={`/matches/${fallbackCrew.githubId}`} replace />;
+  if (!githubId) {
+    return (
+      <MatchLanding
+        crewPeople={crewPeople}
+        onSelectPerson={onSelectPerson}
+        onNavigate={onNavigate}
+      />
+    );
+  }
   if (!crew) return <Navigate to="/" replace />;
 
-  const matches = serverMatches ?? calculateReviewerMatches(crew, people, { sameTrackOnly: true });
+  const matches = serverMatches ?? calculateReviewerMatches(crew, people, {
+    sameTrackOnly: true,
+    requireRecentReviewerActivity: true,
+    recentReferenceAt,
+  });
   const visibleMatches = matches.slice(0, limit);
   const topMatch = matches[0];
 
@@ -183,8 +256,9 @@ export default function ReviewerMatchPage({
             크루의 활동 리듬과 리뷰어의 응답 패턴을 비교해 리뷰어 후보를 추천합니다.
           </p>
           <p className="mt-3 text-sm text-rp-subtle">
-            리뷰 품질이 아닌 활동 시간대와 응답 이력을 기준으로 한 추천입니다.
+            리뷰 품질이 아닌 활동 시간대와 응답 이력을 기준으로 한 추천입니다. {recentReferenceLabel(recentReferenceAt)}
           </p>
+          <MatchModeTabs active="auto" autoHref={`/matches/${crew.githubId}`} />
         </section>
 
         <section className="mt-8 max-w-3xl">
@@ -202,7 +276,7 @@ export default function ReviewerMatchPage({
 
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard title="Selected Crew" value={displayName(crew)} note={displayMeta(crew)} glow="cyan" />
-          <MetricCard title="Candidates" value={formatNumber(matches.length)} note="reviewers with data" glow="purple" />
+          <MetricCard title="Candidates" value={formatNumber(matches.length)} note="recent same-track reviewers" glow="purple" />
           <MetricCard title="Best Match" value={topMatch?.reviewer ? displayName(topMatch.reviewer) : "-"} note={topMatch ? `${topMatch.score} score` : "no candidate"} glow="green" />
           <MetricCard title="Crew PRs" value={formatNumber(crew.asCrew?.totalPRs)} note={`first review ${formatHours(crew.asCrew?.avgFirstReviewHours)}`} glow="yellow" />
         </section>
@@ -227,9 +301,18 @@ export default function ReviewerMatchPage({
         </section>
 
         <section className="mt-[58px] grid gap-4">
-          {visibleMatches.map((match, index) => (
-            <ReviewerCard key={match.reviewer.githubId} match={match} rank={index + 1} />
-          ))}
+          {visibleMatches.length > 0 ? (
+            visibleMatches.map((match, index) => (
+              <ReviewerCard key={match.reviewer.githubId} match={match} rank={index + 1} />
+            ))
+          ) : (
+            <Surface glow="yellow" className="p-6">
+              <p className="text-sm font-semibold text-rp-yellow">NO RECENT MATCHES</p>
+              <p className="mt-3 text-sm text-rp-muted">
+                최근 30일 리뷰 활동이 있는 같은 트랙 리뷰어가 없습니다.
+              </p>
+            </Surface>
+          )}
         </section>
 
         {limit < matches.length ? (

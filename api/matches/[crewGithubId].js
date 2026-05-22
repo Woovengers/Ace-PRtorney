@@ -1,6 +1,6 @@
 import { formatDbError, withClient } from "../../scripts/db/db.js";
 import { methodNotAllowed, sendError, sendJson } from "../_lib/http.js";
-import { loadPeople } from "../_lib/people.js";
+import { enrichPeopleActivity, loadPeople, loadRecentReferenceAt } from "../_lib/people.js";
 import { calculateReviewerMatches } from "../../src/utils/reviewerMatch.js";
 
 export default async function handler(request, response) {
@@ -17,13 +17,19 @@ export default async function handler(request, response) {
 
   try {
     const payload = await withClient(async (client) => {
-      const people = await loadPeople(client);
+      const recentReferenceAt = await loadRecentReferenceAt(client);
+      const people = await enrichPeopleActivity(client, await loadPeople(client), recentReferenceAt);
       const crew = people.find((person) => person.githubId === crewGithubId);
       if (!crew?.asCrew?.hasData) return null;
 
       return {
         crew,
-        matches: calculateReviewerMatches(crew, people, { sameTrackOnly: true }),
+        recentReferenceAt,
+        matches: calculateReviewerMatches(crew, people, {
+          sameTrackOnly: true,
+          requireRecentReviewerActivity: true,
+          recentReferenceAt,
+        }),
       };
     });
 

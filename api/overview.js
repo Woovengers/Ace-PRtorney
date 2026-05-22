@@ -1,4 +1,5 @@
 import { formatDbError, withClient } from "../scripts/db/db.js";
+import { enrichPeopleActivity, loadRecentReferenceAt } from "./_lib/people.js";
 
 const TRACK_LABELS = {
   backend: "BE",
@@ -179,8 +180,9 @@ export async function loadOverviewFromDb(client) {
 
   const generatedAt = new Date().toISOString();
   const summaryRow = summaryResult.rows[0];
+  const recentReferenceAt = await loadRecentReferenceAt(client);
   const members = membersResult.rows.map(serializeMember);
-  const people = peopleResult.rows.map(serializePerson);
+  const people = await enrichPeopleActivity(client, peopleResult.rows.map(serializePerson), recentReferenceAt);
   const peopleMap = Object.fromEntries(people.map((person) => [person.githubId, person]));
   const recentRows = recentResult.rows.map(serializeActivity);
   const repositories = repositoriesResult.rows.map(serializeRepository);
@@ -200,6 +202,7 @@ export async function loadOverviewFromDb(client) {
   return {
     source: "db",
     generatedAt,
+    recentReferenceAt,
     members,
     people,
     peopleMap,
@@ -207,11 +210,13 @@ export async function loadOverviewFromDb(client) {
     personStats: {
       generatedAt,
       sourceGeneratedAt: summaryRow.source_generated_at?.toISOString?.() ?? null,
+      recentReferenceAt,
       people: peopleMap,
     },
     summary: {
       generatedAt,
       sourceGeneratedAt: summaryRow.source_generated_at?.toISOString?.() ?? null,
+      recentReferenceAt,
       membersGeneratedAt: null,
       latestActivityAt: summaryRow.latest_activity_at?.toISOString?.() ?? null,
       totalPRs: summaryRow.total_prs,

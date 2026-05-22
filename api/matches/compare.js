@@ -1,6 +1,6 @@
 import { formatDbError, withClient } from "../../scripts/db/db.js";
 import { methodNotAllowed, sendError, sendJson } from "../_lib/http.js";
-import { loadPeople } from "../_lib/people.js";
+import { enrichPeopleActivity, loadPeople, loadRecentReferenceAt } from "../_lib/people.js";
 import { compareReviewerCandidates } from "../../src/utils/reviewerMatch.js";
 
 export default async function handler(request, response) {
@@ -22,17 +22,21 @@ export default async function handler(request, response) {
 
   try {
     const payload = await withClient(async (client) => {
-      const people = await loadPeople(client);
+      const recentReferenceAt = await loadRecentReferenceAt(client);
+      const people = await enrichPeopleActivity(client, await loadPeople(client), recentReferenceAt);
       const peopleMap = new Map(people.map((person) => [person.githubId, person]));
       const crew = peopleMap.get(crewGithubId);
       if (!crew?.asCrew?.hasData) return null;
 
       const result = compareReviewerCandidates(crew, people, candidateReviewerGithubIds, {
         includeDifferentTrackWithPenalty: Boolean(body.includeDifferentTrackWithPenalty),
+        requireRecentReviewerActivity: true,
+        recentReferenceAt,
       });
 
       return {
         crew,
+        recentReferenceAt,
         matches: result.matches,
         excludedCandidates: result.excludedCandidates,
       };

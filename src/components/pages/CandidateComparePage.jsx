@@ -1,33 +1,45 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import AppHeader from "../common/AppHeader.jsx";
+import MatchModeTabs from "../common/MatchModeTabs.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
 import { compareReviewerCandidates } from "../../utils/reviewerMatch.js";
-import { displayMeta, displayName, isPreferredCrew } from "../../utils/person.js";
+import { displayMeta, displayName } from "../../utils/person.js";
 import { formatHours, formatNumber } from "../../utils/time.js";
-
-function firstCrew(people) {
-  return people.find((person) => isPreferredCrew(person)) ?? people.find((person) => person.asCrew?.hasData);
-}
 
 function candidateLabel(person) {
   return `${displayName(person)} · @${person.githubId}`;
 }
 
-export default function CandidateComparePage({ people, onSelectPerson }) {
+function recentReferenceLabel(recentReferenceAt) {
+  if (!recentReferenceAt) return "최근 기준일 없음";
+  return `최근 기준일 ${new Date(recentReferenceAt).toLocaleDateString("ko-KR")}`;
+}
+
+export default function CandidateComparePage({ data, people, onSelectPerson }) {
   const crewPeople = people.filter((person) => person.asCrew?.hasData);
   const reviewerPeople = people.filter((person) => person.asReviewer?.hasData);
-  const [crew, setCrew] = useState(firstCrew(crewPeople));
+  const [crew, setCrew] = useState(null);
   const [candidateQuery, setCandidateQuery] = useState("");
   const [candidateIds, setCandidateIds] = useState([]);
   const [apiResult, setApiResult] = useState(null);
   const [apiError, setApiError] = useState(null);
+  const recentReferenceAt =
+    apiResult?.recentReferenceAt ??
+    data?.recentReferenceAt ??
+    data?.summary?.recentReferenceAt ??
+    data?.summary?.sourceGeneratedAt ??
+    data?.summary?.latestActivityAt ??
+    null;
 
   const candidateMatches = useMemo(
-    () => compareReviewerCandidates(crew, people, candidateIds),
-    [crew, people, candidateIds],
+    () => compareReviewerCandidates(crew, people, candidateIds, {
+      requireRecentReviewerActivity: true,
+      recentReferenceAt,
+    }),
+    [crew, people, candidateIds, recentReferenceAt],
   );
   const result = apiResult ?? { crew, ...candidateMatches };
   const candidateSuggestions = reviewerPeople
@@ -41,10 +53,6 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
         .includes(query);
     })
     .slice(0, 6);
-
-  useEffect(() => {
-    if (!crew && crewPeople.length > 0) setCrew(firstCrew(crewPeople));
-  }, [crew, crewPeople]);
 
   function addCandidate(person) {
     setCandidateIds((ids) => [...new Set([...ids, person.githubId])]);
@@ -60,7 +68,7 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
   async function runApiCompare() {
     setApiError(null);
     setApiResult(null);
-    if (!shouldUseApi()) return;
+    if (!crew || candidateIds.length === 0 || !shouldUseApi()) return;
 
     try {
       const data = await fetchJson("/api/matches/compare", {
@@ -71,8 +79,13 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
           candidateReviewerGithubIds: candidateIds,
         }),
       });
+      setApiResult(data);
+    } catch (error) {
+      setApiError(error);
+    }
+  }
 
-  if (!crew) {
+  if (crewPeople.length === 0) {
     return (
       <main className="page-grid grid min-h-screen place-items-center px-6 text-rp-text">
         <Surface glow="yellow" className="max-w-lg p-6">
@@ -81,11 +94,6 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
         </Surface>
       </main>
     );
-  }
-      setApiResult(data);
-    } catch (error) {
-      setApiError(error);
-    }
   }
 
   return (
@@ -101,6 +109,13 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
           <p className="mt-6 text-base text-rp-muted">
             특정 크루에게 후보 리뷰어를 직접 넣고, 같은 기준으로 점수를 비교합니다.
           </p>
+          <p className="mt-3 text-sm text-rp-subtle">
+            최근 30일 리뷰 활동이 없는 후보와 다른 트랙 후보는 제외됩니다. {recentReferenceLabel(recentReferenceAt)}
+          </p>
+          <MatchModeTabs
+            active="compare"
+            autoHref={crew ? `/matches/${crew.githubId}` : "/matches"}
+          />
         </section>
 
         <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -161,7 +176,8 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
             </div>
             <button
               type="button"
-              className="mt-5 w-full rounded-md border border-rp-line bg-rp-purple px-4 py-3 text-sm font-semibold text-white transition hover:shadow-glow-purple"
+              disabled={!crew || candidateIds.length === 0}
+              className="mt-5 w-full rounded-md border border-rp-line bg-rp-purple px-4 py-3 text-sm font-semibold text-white transition hover:shadow-glow-purple disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:shadow-none"
               onClick={runApiCompare}
             >
               Compare with API
@@ -171,10 +187,15 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
         </section>
 
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard title="Crew" value={displayName(crew)} note={displayMeta(crew)} glow="cyan" />
+          <MetricCard
+            title="Crew"
+            value={crew ? displayName(crew) : "-"}
+            note={crew ? displayMeta(crew) : "크루를 먼저 선택하세요"}
+            glow="cyan"
+          />
           <MetricCard title="Candidates" value={formatNumber(candidateIds.length)} note="selected reviewers" glow="purple" />
-          <MetricCard title="Included" value={formatNumber(result.matches.length)} note="same track candidates" glow="green" />
-          <MetricCard title="Excluded" value={formatNumber(result.excludedCandidates.length)} note="different track / no data" glow="yellow" />
+          <MetricCard title="Included" value={formatNumber(result.matches.length)} note="recent same-track candidates" glow="green" />
+          <MetricCard title="Excluded" value={formatNumber(result.excludedCandidates.length)} note="different track / inactive" glow="yellow" />
         </section>
 
         {result.excludedCandidates.length > 0 ? (
@@ -203,7 +224,7 @@ export default function CandidateComparePage({ people, onSelectPerson }) {
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-3">
                 <p className="text-xs text-rp-subtle">first {formatHours(match.reviewer.asReviewer.avgFirstResponseHours)}</p>
-                <p className="text-xs text-rp-subtle">rereview {formatHours(match.reviewer.asReviewer.avgRereviewHours)}</p>
+                <p className="text-xs text-rp-subtle">median rereview {formatHours(match.reviewer.asReviewer.avgRereviewHours)}</p>
                 <p className="text-xs text-rp-subtle">events {formatNumber(match.reviewer.asReviewer.reviewEvents)}</p>
               </div>
             </Surface>

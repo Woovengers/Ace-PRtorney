@@ -8,6 +8,7 @@ const TRACK_LABELS = {
 
 const HOUR_MS = 60 * 60 * 1000;
 const RECENT_LIMIT = 24;
+const RECENT_REVIEW_WINDOW_DAYS = 30;
 const PERSON_CHUNK_SIZE = 500;
 const RECENT_CHUNK_SIZE = 100;
 
@@ -56,6 +57,16 @@ function average(values) {
   return Math.round((sum / valid.length) * 10) / 10;
 }
 
+function median(values) {
+  const valid = values.filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  if (valid.length === 0) return null;
+  const middle = Math.floor(valid.length / 2);
+  const value = valid.length % 2 === 0
+    ? (valid[middle - 1] + valid[middle]) / 2
+    : valid[middle];
+  return Math.round(value * 10) / 10;
+}
+
 function maxDateIso(a, b) {
   if (!a) return b;
   if (!b) return a;
@@ -66,6 +77,28 @@ function toIso(value) {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString();
   return new Date(value).toISOString();
+}
+
+function clampFutureIso(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const now = new Date();
+  return (date > now ? now : date).toISOString();
+}
+
+function cutoffIso(referenceAt, days = RECENT_REVIEW_WINDOW_DAYS) {
+  if (!referenceAt) return null;
+  const date = new Date(referenceAt);
+  if (!Number.isFinite(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString();
+}
+
+function countSince(values, cutoff) {
+  if (!cutoff) return 0;
+  const cutoffTime = new Date(cutoff).getTime();
+  return values.filter((value) => new Date(value).getTime() >= cutoffTime).length;
 }
 
 function formatTrackMeta(person) {
@@ -91,8 +124,11 @@ function createPerson(githubId, member) {
       hasData: false,
       reviewedPRs: 0,
       reviewEvents: 0,
+      recent30dReviewCount: 0,
+      latestReviewAt: null,
       avgFirstResponseHours: null,
       avgRereviewHours: null,
+      rereviewSamples: 0,
       activityByHour: emptyHours(),
       activityByWeekday: emptyWeekdays(),
       activityHeatmap: emptyHeatmap(),
@@ -100,6 +136,7 @@ function createPerson(githubId, member) {
     asCrew: {
       hasData: false,
       totalPRs: 0,
+      latestCrewActivityAt: null,
       avgMissionHours: null,
       avgFirstReviewHours: null,
       avgReRequestHours: null,
@@ -112,6 +149,7 @@ function createPerson(githubId, member) {
       reviewerFirstResponseHours: [],
       reviewerRereviewHours: [],
       reviewedPrKeys: new Set(),
+      reviewerSubmittedAts: [],
       crewMissionHours: [],
       crewFirstReviewHours: [],
       crewReRequestHours: [],
@@ -261,7 +299,25 @@ async function loadPullRequests(client) {
   return [...prMap.values()];
 }
 
-function calculateStats(members, prs) {
+async function loadRecentReferenceAt(client) {
+  const result = await client.query(`
+    select
+      (
+        select max(finished_at)
+        from sync_runs
+        where status = 'success'
+      ) as sync_reference_at,
+      (
+        select max(submitted_at)
+        from review_events
+        where author_role = 'reviewer'
+      ) as latest_reviewer_event_at
+  `);
+  const row = result.rows[0] ?? {};
+  return clampFutureIso(row.sync_reference_at ?? row.latest_reviewer_event_at);
+}
+
+function calculateStats(members, prs, recentReferenceAt) {
   const memberMap = new Map(members.map((member) => [member.githubId, member]));
   const people = new Map();
   const repoSummaries = new Map();
@@ -317,6 +373,7 @@ function calculateStats(members, prs) {
 
     if (crew) {
       crew.asCrew.totalPRs += 1;
+      crew.asCrew.latestCrewActivityAt = maxDateIso(crew.asCrew.latestCrewActivityAt, pr.createdAt);
       addActivity(crew.asCrew, pr.createdAt);
       recentCrew.push(
         createActivityItem({
@@ -346,7 +403,7 @@ function calculateStats(members, prs) {
     }
 
     let pendingCrewRequestAt = null;
-    const pendingReviewerChanges = new Map();
+    const pendingReviewerRounds = new Map();
     const firstResponseSeen = new Set();
 
     for (const review of reviews) {
@@ -357,7 +414,9 @@ function calculateStats(members, prs) {
         if (!reviewer) continue;
 
         reviewer.asReviewer.reviewEvents += 1;
+        reviewer.asReviewer.latestReviewAt = maxDateIso(reviewer.asReviewer.latestReviewAt, review.submittedAt);
         reviewer._samples.reviewedPrKeys.add(prKey);
+        reviewer._samples.reviewerSubmittedAts.push(review.submittedAt);
         addActivity(reviewer.asReviewer, review.submittedAt);
 
         if (!firstResponseSeen.has(review.reviewer)) {
@@ -368,17 +427,22 @@ function calculateStats(members, prs) {
           }
         }
 
-        if (pendingReviewerChanges.has(review.reviewer)) {
+        const pendingRound = pendingReviewerRounds.get(review.reviewer);
+        if (pendingRound?.phase === "waitingReviewer") {
           const rereviewHours = hoursBetween(
-            pendingReviewerChanges.get(review.reviewer),
+            pendingRound.crewResponseAt,
             review.submittedAt,
           );
           if (rereviewHours !== null) reviewer._samples.reviewerRereviewHours.push(rereviewHours);
-          pendingReviewerChanges.delete(review.reviewer);
+          pendingReviewerRounds.delete(review.reviewer);
         }
 
         if (review.state === "CHANGES_REQUESTED") {
-          pendingReviewerChanges.set(review.reviewer, review.submittedAt);
+          pendingReviewerRounds.set(review.reviewer, {
+            phase: "waitingCrew",
+            changeRequestedAt: review.submittedAt,
+            crewResponseAt: null,
+          });
           pendingCrewRequestAt = review.submittedAt;
         }
 
@@ -419,15 +483,30 @@ function calculateStats(members, prs) {
           pendingCrewRequestAt = null;
         }
       }
+
+      if (review.authorRole === "crew" && review.state === "COMMENTED") {
+        for (const [reviewerGithubId, pendingRound] of pendingReviewerRounds.entries()) {
+          if (pendingRound.phase === "waitingCrew") {
+            pendingReviewerRounds.set(reviewerGithubId, {
+              ...pendingRound,
+              phase: "waitingReviewer",
+              crewResponseAt: review.submittedAt,
+            });
+          }
+        }
+      }
     }
   }
 
   const peopleRows = [...people.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([githubId, person]) => {
+      const recentCutoff = cutoffIso(recentReferenceAt);
       person.asReviewer.reviewedPRs = person._samples.reviewedPrKeys.size;
+      person.asReviewer.recent30dReviewCount = countSince(person._samples.reviewerSubmittedAts, recentCutoff);
       person.asReviewer.avgFirstResponseHours = average(person._samples.reviewerFirstResponseHours);
-      person.asReviewer.avgRereviewHours = average(person._samples.reviewerRereviewHours);
+      person.asReviewer.avgRereviewHours = median(person._samples.reviewerRereviewHours);
+      person.asReviewer.rereviewSamples = person._samples.reviewerRereviewHours.length;
       person.asCrew.avgMissionHours = average(person._samples.crewMissionHours);
       person.asCrew.avgFirstReviewHours = average(person._samples.crewFirstReviewHours);
       person.asCrew.avgReRequestHours = average(person._samples.crewReRequestHours);
@@ -540,8 +619,10 @@ async function writeRecentActivities(client, recentActivity) {
 
 async function main() {
   await withClient(async (client) => {
-    const [members, prs] = await Promise.all([loadMembers(client), loadPullRequests(client)]);
-    const { peopleRows, repoRows, recentActivity } = calculateStats(members, prs);
+    const members = await loadMembers(client);
+    const prs = await loadPullRequests(client);
+    const recentReferenceAt = await loadRecentReferenceAt(client);
+    const { peopleRows, repoRows, recentActivity } = calculateStats(members, prs, recentReferenceAt);
 
     await transaction(client, async () => {
       await client.query("truncate person_summary_stats, repo_summary_stats, recent_activities");
