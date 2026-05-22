@@ -6,7 +6,49 @@ async function loadJson(path) {
   return response.json();
 }
 
-export async function loadOverviewData() {
+const USE_OVERVIEW_API =
+  import.meta.env.PROD || import.meta.env.VITE_USE_DB_API === "true";
+
+async function loadApiJson(path) {
+  const response = await fetch(path, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!response.ok || !contentType.includes("application/json")) {
+    throw new Error(`${path} API 사용 불가`);
+  }
+
+  return response.json();
+}
+
+function sortPeople(peopleMap) {
+  return Object.values(peopleMap).sort((a, b) => {
+    const cohortDiff = (b.cohort ?? 0) - (a.cohort ?? 0);
+    if (cohortDiff !== 0) return cohortDiff;
+    return (a.displayName ?? a.githubId).localeCompare(b.displayName ?? b.githubId, "ko");
+  });
+}
+
+async function loadOverviewFromApi() {
+  const data = await loadApiJson("/api/overview");
+  const peopleMap = data.peopleMap ?? data.personStats?.people ?? {};
+  const people = data.people ?? sortPeople(peopleMap);
+
+  return {
+    members: data.members ?? [],
+    people,
+    peopleMap,
+    personStats: data.personStats ?? { people: peopleMap },
+    summary: data.summary,
+    recentActivity: data.recentActivity,
+    source: data.source ?? "api",
+  };
+}
+
+async function loadOverviewFromPublicJson() {
   const [membersJson, personStats, summary, recentActivity] = await Promise.all([
     loadJson("/members.json"),
     loadJson("/person-stats.json"),
@@ -16,11 +58,7 @@ export async function loadOverviewData() {
 
   const peopleMap = personStats.people ?? {};
   const members = membersJson.members ?? [];
-  const people = Object.values(peopleMap).sort((a, b) => {
-    const cohortDiff = (b.cohort ?? 0) - (a.cohort ?? 0);
-    if (cohortDiff !== 0) return cohortDiff;
-    return (a.displayName ?? a.githubId).localeCompare(b.displayName ?? b.githubId, "ko");
-  });
+  const people = sortPeople(peopleMap);
 
   return {
     members,
@@ -29,5 +67,18 @@ export async function loadOverviewData() {
     personStats,
     summary,
     recentActivity,
+    source: "public-json",
   };
+}
+
+export async function loadOverviewData() {
+  if (!USE_OVERVIEW_API) {
+    return loadOverviewFromPublicJson();
+  }
+
+  try {
+    return await loadOverviewFromApi();
+  } catch {
+    return loadOverviewFromPublicJson();
+  }
 }
