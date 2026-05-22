@@ -190,7 +190,11 @@ export default function ReviewerMatchPage({
         <section className="mt-8 max-w-3xl">
           <SearchBox
             people={crewPeople}
-            selectedPerson={selectedPerson?.asCrew?.hasData ? selectedPerson : crew}
+            selectedPerson={
+              selectedPerson?.asCrew?.hasData && selectedPerson.githubId === crew.githubId
+                ? selectedPerson
+                : crew
+            }
             onSelectPerson={onSelectPerson}
             onPersonNavigate={(person) => onNavigate("matches", person)}
           />

@@ -25,11 +25,21 @@ function SkeletonCard() {
   );
 }
 
+function uniquePeopleByGithubId(items, trackFilter) {
+  const uniqueItems = new Map();
+
+  for (const item of items) {
+    if (trackFilter !== "all" && item.track !== trackFilter) continue;
+    if (!uniqueItems.has(item.githubId)) uniqueItems.set(item.githubId, item);
+  }
+
+  return [...uniqueItems.values()];
+}
+
 export default function OverviewPage({
   data,
   loading,
   people,
-  selectedPerson,
   onSelectPerson,
   onNavigate,
 }) {
@@ -38,17 +48,11 @@ export default function OverviewPage({
   const recentActivity = data?.recentActivity;
 
   const filteredCrew = useMemo(
-    () =>
-      (recentActivity?.crew ?? []).filter(
-        (item) => trackFilter === "all" || item.track === trackFilter,
-      ),
+    () => uniquePeopleByGithubId(recentActivity?.crew ?? [], trackFilter),
     [recentActivity, trackFilter],
   );
   const filteredReviewers = useMemo(
-    () =>
-      (recentActivity?.reviewers ?? []).filter(
-        (item) => trackFilter === "all" || item.track === trackFilter,
-      ),
+    () => uniquePeopleByGithubId(recentActivity?.reviewers ?? [], trackFilter),
     [recentActivity, trackFilter],
   );
 
@@ -78,7 +82,6 @@ export default function OverviewPage({
         <section className="mt-8 max-w-3xl">
           <SearchBox
             people={people}
-            selectedPerson={selectedPerson}
             onSelectPerson={onSelectPerson}
             onPersonNavigate={handleSearchNavigate}
           />

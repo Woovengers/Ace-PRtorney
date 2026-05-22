@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import ActivityBars from "../charts/ActivityBars.jsx";
 import AppHeader from "../common/AppHeader.jsx";
 import HeatmapGrid from "../charts/HeatmapGrid.jsx";
@@ -7,7 +7,7 @@ import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
-import { displayMeta, displayName, isPreferredCrew, personInitial } from "../../utils/person.js";
+import { displayMeta, displayName, personInitial } from "../../utils/person.js";
 import { formatHours, formatNumber, formatShortDate } from "../../utils/time.js";
 
 const HOUR_LABELS = Array.from({ length: 24 }, (_, hour) => (hour % 3 === 0 ? `${hour}` : ""));
@@ -20,33 +20,48 @@ const EMPTY_PR_PAGE = {
   hasMore: false,
 };
 
-function firstPersonForMode(people, mode) {
-  if (mode === "crew") {
-    return (
-      people.find((person) => isPreferredCrew(person)) ??
-      people.find((person) => person.asCrew?.hasData)
-    );
-  }
-
-  return people.find((person) => person.asReviewer?.hasData);
-}
-
-function EmptyState({ mode, people }) {
-  const fallback = firstPersonForMode(people, mode);
-
-  if (fallback) {
-    return <Navigate to={`/${mode}/${fallback.githubId}`} replace />;
-  }
+function RoleLanding({ mode, people, onSelectPerson, onNavigate }) {
+  const title = mode === "crew" ? "Crew Pace" : "Reviewer Rhythm";
+  const rolePeople =
+    mode === "crew"
+      ? people.filter((person) => person.asCrew?.hasData)
+      : people.filter((person) => person.asReviewer?.hasData);
 
   return (
-    <main className="page-grid grid min-h-screen place-items-center px-6 text-rp-text">
-      <Surface className="max-w-lg p-6">
-        <p className="text-xs font-semibold text-rp-purple">NO DATA</p>
-        <h1 className="mt-3 text-2xl font-extrabold">표시할 상세 데이터가 없습니다.</h1>
-        <Link className="mt-5 inline-flex text-sm font-semibold text-rp-cyan" to="/">
-          Overview로 돌아가기
-        </Link>
-      </Surface>
+    <main className="page-grid min-h-screen overflow-x-hidden text-rp-text">
+      <AppHeader active={mode} />
+
+      <div className="mx-auto w-full max-w-[1440px] px-6 pb-16 pt-12 md:px-[54px]">
+        <section className="max-w-3xl">
+          <Link to="/" className="text-xs font-semibold text-rp-subtle transition hover:text-rp-text">
+            Overview
+          </Link>
+          <p className="mt-5 text-xs font-semibold text-rp-purple">WOOWACOURSE REVIEW ANALYTICS</p>
+          <h1 className="mt-4 text-[42px] font-extrabold leading-none md:text-[64px]">
+            {title}
+          </h1>
+          <p className="mt-5 text-base text-rp-muted">
+            {mode === "crew"
+              ? "크루를 검색해서 작성 PR 흐름과 응답 리듬을 확인하세요."
+              : "리뷰어를 검색해서 리뷰 응답 속도와 활동 리듬을 확인하세요."}
+          </p>
+        </section>
+
+        <section className="mt-8 max-w-3xl">
+          <SearchBox
+            people={rolePeople}
+            onSelectPerson={onSelectPerson}
+            onPersonNavigate={(person) => onNavigate(mode, person)}
+          />
+        </section>
+
+        <Surface glow={mode === "crew" ? "cyan" : "green"} className="mt-10 max-w-3xl p-6">
+          <p className="text-sm font-semibold text-rp-text">검색할 대상을 선택하세요.</p>
+          <p className="mt-3 text-sm text-rp-muted">
+            아직 선택한 사람이 없어서 상세 통계는 표시하지 않습니다.
+          </p>
+        </Surface>
+      </div>
     </main>
   );
 }
@@ -211,7 +226,6 @@ export default function PersonDetailPage({
   loading,
   mode,
   people,
-  selectedPerson,
   onSelectPerson,
   onNavigate,
 }) {
@@ -310,7 +324,16 @@ export default function PersonDetailPage({
   }, [githubId, isPrLoading, loadPrPage, prError, prPage.hasMore, prPage.nextOffset]);
 
   if (loading) return <LoadingState />;
-  if (!githubId) return <EmptyState mode={mode} people={people} />;
+  if (!githubId) {
+    return (
+      <RoleLanding
+        mode={mode}
+        people={people}
+        onSelectPerson={onSelectPerson}
+        onNavigate={onNavigate}
+      />
+    );
+  }
 
   const person = data?.peopleMap?.[githubId];
   if (!person) return <NotFound githubId={githubId} />;
@@ -320,14 +343,13 @@ export default function PersonDetailPage({
   const glow = mode === "crew" ? "cyan" : "green";
   const title = mode === "crew" ? "Crew Pace" : "Reviewer Rhythm";
   const hasData = Boolean(stats?.hasData);
-  const searchSelection = selectedPerson?.githubId === person.githubId ? selectedPerson : person;
   const fallbackPrs = mode === "crew" ? detail?.recentCrewPrs : detail?.recentReviewedPrs;
   const listedPrs = shouldUseApi() ? prPage.items : (fallbackPrs ?? []);
   const listedTotal = shouldUseApi() ? prPage.total : listedPrs.length;
 
   return (
     <main className="page-grid min-h-screen overflow-x-hidden text-rp-text">
-      <AppHeader active={mode} personGithubId={person.githubId} />
+      <AppHeader active={mode} />
 
       <div className="mx-auto w-full max-w-[1440px] px-6 pb-16 pt-10 md:px-[54px]">
         <div className="max-w-3xl">
@@ -362,7 +384,7 @@ export default function PersonDetailPage({
         <section className="mt-8 max-w-3xl">
           <SearchBox
             people={people}
-            selectedPerson={searchSelection}
+            selectedPerson={person}
             onSelectPerson={onSelectPerson}
             onPersonNavigate={(nextPerson) => onNavigate(mode, nextPerson)}
           />

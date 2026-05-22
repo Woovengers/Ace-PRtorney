@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppHeader from "../common/AppHeader.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
@@ -16,10 +16,10 @@ function candidateLabel(person) {
   return `${displayName(person)} · @${person.githubId}`;
 }
 
-export default function CandidateComparePage({ people, selectedPerson, onSelectPerson }) {
+export default function CandidateComparePage({ people, onSelectPerson }) {
   const crewPeople = people.filter((person) => person.asCrew?.hasData);
   const reviewerPeople = people.filter((person) => person.asReviewer?.hasData);
-  const [crew, setCrew] = useState(selectedPerson?.asCrew?.hasData ? selectedPerson : firstCrew(crewPeople));
+  const [crew, setCrew] = useState(firstCrew(crewPeople));
   const [candidateQuery, setCandidateQuery] = useState("");
   const [candidateIds, setCandidateIds] = useState([]);
   const [apiResult, setApiResult] = useState(null);
@@ -41,6 +41,10 @@ export default function CandidateComparePage({ people, selectedPerson, onSelectP
         .includes(query);
     })
     .slice(0, 6);
+
+  useEffect(() => {
+    if (!crew && crewPeople.length > 0) setCrew(firstCrew(crewPeople));
+  }, [crew, crewPeople]);
 
   function addCandidate(person) {
     setCandidateIds((ids) => [...new Set([...ids, person.githubId])]);

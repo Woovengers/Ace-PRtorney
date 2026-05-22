@@ -64,7 +64,6 @@ export default function App() {
             data={data}
             loading={!data}
             people={people}
-            selectedPerson={selectedPerson}
             onNavigate={handleNavigate}
             onSelectPerson={setSelectedPerson}
           />
@@ -78,7 +77,6 @@ export default function App() {
             loading={!data}
             mode="crew"
             people={people}
-            selectedPerson={selectedPerson}
             onNavigate={handleNavigate}
             onSelectPerson={setSelectedPerson}
           />
@@ -92,7 +90,6 @@ export default function App() {
             loading={!data}
             mode="crew"
             people={people}
-            selectedPerson={selectedPerson}
             onNavigate={handleNavigate}
             onSelectPerson={setSelectedPerson}
           />
@@ -106,7 +103,6 @@ export default function App() {
             loading={!data}
             mode="reviewer"
             people={people}
-            selectedPerson={selectedPerson}
             onNavigate={handleNavigate}
             onSelectPerson={setSelectedPerson}
           />
@@ -120,7 +116,6 @@ export default function App() {
             loading={!data}
             mode="reviewer"
             people={people}
-            selectedPerson={selectedPerson}
             onNavigate={handleNavigate}
             onSelectPerson={setSelectedPerson}
           />
@@ -134,7 +129,6 @@ export default function App() {
         element={
           <CandidateComparePage
             people={people}
-            selectedPerson={selectedPerson}
             onSelectPerson={setSelectedPerson}
           />
         }
