@@ -4,6 +4,22 @@
       "handle": "filesystem"
     },
     {
+      "src": "/api/matches/([^/]+)",
+      "dest": "/api/matches?crewGithubId=$1"
+    },
+    {
+      "src": "/api/people/([^/]+)",
+      "dest": "/api/people?githubId=$1"
+    },
+    {
+      "src": "/api/repos/([^/]+)/([^/]+)",
+      "dest": "/api/repos?owner=$1&repo=$2"
+    },
+    {
+      "src": "/api/prs/([^/]+)/([^/]+)/([0-9]+)",
+      "dest": "/api/prs?owner=$1&repo=$2&number=$3"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
