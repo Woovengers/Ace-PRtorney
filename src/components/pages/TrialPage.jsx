@@ -485,8 +485,6 @@ function CourtScene({ mode, selectedComment, reply, attorneyName }) {
 function ProsecutorStep({
   selectedComment,
   reply,
-  answerDirection,
-  onDirectionChange,
   onReplyChange,
   onAdvance,
   onBack,
@@ -502,23 +500,6 @@ function ProsecutorStep({
         <Surface glow="purple" className="p-5">
           <h2 className="text-xl font-extrabold">반박하기</h2>
           <p className="mt-2 text-sm text-rp-muted">PR 작성자가 리뷰어 주장에 답변할 멘트를 직접 작성합니다.</p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {["인정", "반론", "추가 설명"].map((direction) => (
-              <button
-                key={direction}
-                type="button"
-                onClick={() => onDirectionChange(direction)}
-                className={cn(
-                  "h-9 rounded-lg border px-5 text-sm font-semibold",
-                  answerDirection === direction
-                    ? "border-rp-purple bg-rp-purple text-rp-text"
-                    : "border-rp-line bg-rp-panel2 text-rp-muted",
-                )}
-              >
-                {direction}
-              </button>
-            ))}
-          </div>
           <textarea
             value={reply}
             onChange={(event) => onReplyChange(event.target.value)}
@@ -684,7 +665,6 @@ export default function TrialPage() {
   const [trialData, setTrialData] = useState(() => demoTrialData(owner, repo, number));
   const [selectedComment, setSelectedComment] = useState(() => demoReviewComments[0]);
   const [selectedLine, setSelectedLine] = useState(() => demoEvidenceLines.find((line) => line.flagged) ?? demoEvidenceLines[0]);
-  const [answerDirection, setAnswerDirection] = useState("반론");
   const [reply, setReply] = useState("");
   const [githubSession, setGithubSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
@@ -847,18 +827,6 @@ export default function TrialPage() {
               evidencePath={evidencePath}
               githubSession={githubSession}
             />
-            <section className="relative mt-8 min-h-[190px] overflow-hidden rounded-lg border border-rp-line bg-rp-panel shadow-glow-purple">
-              <img className="absolute inset-0 h-full w-full object-cover opacity-55" src={ASSETS.courtroom} alt="" />
-              <img className="absolute bottom-[-90px] left-7 h-[266px] object-contain opacity-95" src={ASSETS.attorney} alt="" />
-              <img className="absolute left-[42%] top-6 h-[188px] object-contain" src={ASSETS.objection} alt="" />
-              <div className="absolute inset-0 bg-rp-bg/45" />
-              <div className="relative z-10 max-w-3xl p-9">
-                <h2 className="text-2xl font-extrabold">다음 단계: {selectedComment.actor}의 반박</h2>
-                <p className="mt-3 text-sm leading-6 text-rp-muted">
-                  선택한 PR 코멘트를 리뷰어 주장으로 보여주고, PR 작성자는 답변을 작성합니다.
-                </p>
-              </div>
-            </section>
           </>
         ) : null}
 
@@ -867,8 +835,6 @@ export default function TrialPage() {
             <ProsecutorStep
               selectedComment={selectedComment}
               reply={reply}
-              answerDirection={answerDirection}
-              onDirectionChange={setAnswerDirection}
               onReplyChange={setReply}
               onBack={() => setStage("evidence")}
               onAdvance={() => setStage("attorney")}
