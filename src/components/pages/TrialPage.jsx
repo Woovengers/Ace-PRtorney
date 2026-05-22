@@ -145,6 +145,109 @@ function Pill({ children, tone = "red" }) {
   );
 }
 
+function renderInlineMarkdown(text) {
+  const parts = [];
+  const pattern = /(\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\))/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[2]) {
+      parts.push(<strong key={`${match.index}-strong`}>{match[2]}</strong>);
+    } else if (match[3]) {
+      parts.push(
+        <code key={`${match.index}-code`} className="rounded bg-rp-panel2 px-1 py-0.5 font-mono text-[0.9em] text-rp-yellow">
+          {match[3]}
+        </code>,
+      );
+    } else if (match[4] && match[5]) {
+      parts.push(
+        <a key={`${match.index}-link`} className="font-semibold text-rp-cyan underline" href={match[5]} target="_blank" rel="noreferrer">
+          {match[4]}
+        </a>,
+      );
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+function MarkdownPreview({ value }) {
+  const blocks = value.trim().split(/\n{2,}/);
+
+  if (!value.trim()) {
+    return <p className="text-sm text-rp-subtle">작성한 Markdown 미리보기가 여기에 표시됩니다.</p>;
+  }
+
+  return (
+    <div className="space-y-4 text-sm leading-relaxed text-rp-text">
+      {blocks.map((block, index) => {
+        const key = `${index}-${block.slice(0, 16)}`;
+
+        if (block.startsWith("```")) {
+          const code = block.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, "");
+          return (
+            <pre key={key} className="overflow-x-auto rounded-lg border border-rp-line bg-[#050505] p-4 font-mono text-xs text-rp-text">
+              <code>{code}</code>
+            </pre>
+          );
+        }
+
+        if (block.startsWith("### ")) {
+          return <h3 key={key} className="text-base font-extrabold">{renderInlineMarkdown(block.slice(4))}</h3>;
+        }
+
+        if (block.startsWith("## ")) {
+          return <h2 key={key} className="text-lg font-extrabold">{renderInlineMarkdown(block.slice(3))}</h2>;
+        }
+
+        if (block.startsWith("# ")) {
+          return <h1 key={key} className="text-xl font-extrabold">{renderInlineMarkdown(block.slice(2))}</h1>;
+        }
+
+        const lines = block.split("\n");
+        const isList = lines.every((line) => /^[-*] /.test(line));
+        if (isList) {
+          return (
+            <ul key={key} className="list-disc space-y-1 pl-5">
+              {lines.map((line, lineIndex) => (
+                <li key={`${key}-${lineIndex}`}>{renderInlineMarkdown(line.slice(2))}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        const isQuote = lines.every((line) => /^> ?/.test(line));
+        if (isQuote) {
+          return (
+            <blockquote key={key} className="border-l-4 border-rp-purple pl-4 text-rp-muted">
+              {lines.map((line, lineIndex) => (
+                <p key={`${key}-${lineIndex}`}>{renderInlineMarkdown(line.replace(/^> ?/, ""))}</p>
+              ))}
+            </blockquote>
+          );
+        }
+
+        return (
+          <p key={key} className="whitespace-pre-wrap">
+            {renderInlineMarkdown(block)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function PrUrlInput({ value, loading, onChange, onLoadEvidence }) {
   return (
     <Surface glow="purple" className="mt-8 p-5">
@@ -474,7 +577,9 @@ function CourtScene({ mode, selectedComment, reply, attorneyName }) {
           )}>
             {speaker}
           </span>
-          <p className="text-lg font-semibold leading-relaxed text-rp-text md:text-xl">{dialogue}</p>
+          <div className="text-lg font-semibold leading-relaxed text-rp-text md:text-xl">
+            <MarkdownPreview value={dialogue} />
+          </div>
           <span className="absolute bottom-3 right-6 text-3xl font-extrabold text-rp-yellow">»</span>
         </div>
       </div>
@@ -498,14 +603,23 @@ function ProsecutorStep({
       <CourtScene mode="prosecutor" selectedComment={selectedComment} reply={reply} />
       <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,820px)_436px]">
         <Surface glow="purple" className="p-5">
-          <h2 className="text-xl font-extrabold">반박하기</h2>
-          <p className="mt-2 text-sm text-rp-muted">PR 작성자가 리뷰어 주장에 답변할 멘트를 직접 작성합니다.</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-extrabold">반박하기</h2>
+              <p className="mt-2 text-sm text-rp-muted">PR 작성자가 리뷰어 주장에 답변할 Markdown을 직접 작성합니다.</p>
+            </div>
+            <Pill tone="green">Markdown</Pill>
+          </div>
           <textarea
             value={reply}
             onChange={(event) => onReplyChange(event.target.value)}
-            placeholder="예: 리뷰 감사합니다. 해당 부분은 별도 메서드로 분리해서 의도를 더 명확히 드러내겠습니다."
-            className="mt-5 min-h-[116px] w-full resize-none rounded-xl border border-rp-line bg-[#0b0b0b] p-5 text-base leading-relaxed text-rp-text outline-none transition placeholder:text-rp-subtle/60 focus:border-rp-purple"
+            placeholder={"Markdown으로 답변을 작성하세요.\n예: **수정 완료했습니다.**\n- 테스트를 추가했습니다.\n```js\nexpect(result).toBe(true)\n```"}
+            className="mt-5 min-h-[160px] w-full resize-y rounded-xl border border-rp-line bg-[#0b0b0b] p-5 font-mono text-sm leading-relaxed text-rp-text outline-none transition placeholder:text-rp-subtle/50 focus:border-rp-purple"
           />
+          <div className="mt-4 rounded-xl border border-rp-line bg-rp-panel2 p-5">
+            <p className="mb-3 text-xs font-extrabold uppercase text-rp-subtle">Markdown 미리보기</p>
+            <MarkdownPreview value={reply} />
+          </div>
           <div className="mt-5 flex flex-wrap gap-4">
             <button type="button" onClick={onBack} className="h-10 rounded-lg border border-rp-line bg-rp-panel2 px-8 text-sm font-semibold text-rp-text">
               증거로 돌아가기
@@ -562,9 +676,9 @@ function AttorneyStep({ trialData, selectedComment, reply, githubSession, attorn
       <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,820px)_436px]">
         <Surface glow="cyan" className="p-5">
           <h2 className="text-xl font-extrabold">GitHub 답글 게시 전 확인</h2>
-          <p className="mt-2 text-sm text-rp-muted">선택한 리뷰 코멘트에 PR 작성자 답변을 등록합니다.</p>
-          <div className="mt-5 min-h-[116px] whitespace-pre-wrap rounded-xl border border-rp-line bg-[#0b0b0b] p-5 text-base leading-relaxed text-rp-text">
-            {finalReply}
+          <p className="mt-2 text-sm text-rp-muted">선택한 리뷰 코멘트에 PR 작성자 답변을 Markdown 그대로 등록합니다.</p>
+          <div className="mt-5 min-h-[116px] rounded-xl border border-rp-line bg-[#0b0b0b] p-5">
+            <MarkdownPreview value={finalReply} />
           </div>
           <div className="mt-5 flex flex-wrap gap-4">
             <button type="button" onClick={onBack} className="h-10 rounded-lg border border-rp-line bg-rp-panel2 px-8 text-sm font-semibold text-rp-text">
