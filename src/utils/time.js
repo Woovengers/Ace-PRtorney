@@ -19,7 +19,10 @@ export function formatHours(value) {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
   if (value < 1) return `${Math.round(value * 60)}m`;
   if (value < 24) return `${Math.round(value * 10) / 10}h`;
-  return `${Math.round((value / 24) * 10) / 10}d`;
+  const days = Math.floor(value / 24);
+  const hours = Math.round((value - days * 24) * 10) / 10;
+  if (hours === 0) return `${days}d`;
+  return `${days}d ${hours}h`;
 }
 
 export function relativeTime(iso) {

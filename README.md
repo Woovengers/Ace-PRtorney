@@ -201,7 +201,8 @@ PLEASE IMPLEMENT THIS PLAN.
 - `reviewedPRs`: 해당 사람이 리뷰어 이벤트를 남긴 고유 PR 수
 - `reviewEvents`: 해당 사람의 review 이벤트 수
 - `avgFirstResponseHours`: 각 PR에서 해당 리뷰어의 첫 이벤트 시각 - `pr.createdAt`
-- `avgRereviewHours`: 같은 PR에서 직전 `CHANGES_REQUESTED` 이후 같은 리뷰어의 다음 `reviewer` 이벤트까지 걸린 시간
+- `avgRereviewHours`: 같은 PR에서 `CHANGES_REQUESTED` 이후 첫 crew `COMMENTED`부터 같은 리뷰어의 다음 `reviewer` 이벤트까지 걸린 시간의 median
+- `rereviewSamples`: `avgRereviewHours` 계산에 사용한 재리뷰 샘플 수
 - `activityByHour`: `submittedAt`을 KST(UTC+9)로 변환해 0~23시 count
 
 크루 통계:

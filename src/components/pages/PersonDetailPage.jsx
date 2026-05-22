@@ -127,7 +127,7 @@ function StatNarrative({ mode, stats }) {
           입니다.
         </p>
         <p>
-          변경 요청 이후 재리뷰까지 평균{" "}
+          크루 응답 이후 재리뷰까지 중앙값{" "}
           <span className="font-semibold text-rp-purple">{formatHours(stats.avgRereviewHours)}</span>
           이 걸립니다.
         </p>
@@ -433,7 +433,7 @@ export default function PersonDetailPage({
               <MetricCard title="Reviewed PRs" value={formatNumber(stats.reviewedPRs)} note="리뷰한 고유 PR" glow={glow} />
               <MetricCard title="Review Events" value={formatNumber(stats.reviewEvents)} note="review submission" glow="purple" />
               <MetricCard title="First Response" value={formatHours(stats.avgFirstResponseHours)} note="PR 생성 후 첫 리뷰" glow="cyan" />
-              <MetricCard title="Rereview" value={formatHours(stats.avgRereviewHours)} note="변경 요청 후 다음 리뷰" glow="yellow" />
+              <MetricCard title="Median Rereview" value={formatHours(stats.avgRereviewHours)} note="크루 응답 후 다음 리뷰" glow="yellow" />
             </>
           )}
         </section>

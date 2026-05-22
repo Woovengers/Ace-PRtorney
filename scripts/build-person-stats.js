@@ -69,6 +69,16 @@ function average(values) {
   return Math.round((sum / valid.length) * 10) / 10;
 }
 
+function median(values) {
+  const valid = values.filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  if (valid.length === 0) return null;
+  const middle = Math.floor(valid.length / 2);
+  const value = valid.length % 2 === 0
+    ? (valid[middle - 1] + valid[middle]) / 2
+    : valid[middle];
+  return Math.round(value * 10) / 10;
+}
+
 function maxDateIso(a, b) {
   if (!a) return b;
   if (!b) return a;
@@ -124,6 +134,7 @@ function createPerson(githubId, member) {
       latestReviewAt: null,
       avgFirstResponseHours: null,
       avgRereviewHours: null,
+      rereviewSamples: 0,
       activityByHour: emptyHours(),
       activityByWeekday: emptyWeekdays(),
       activityHeatmap: emptyHeatmap(),
@@ -280,7 +291,7 @@ async function main() {
     }
 
     let pendingCrewRequestAt = null;
-    const pendingReviewerChanges = new Map();
+    const pendingReviewerRounds = new Map();
     const firstResponseSeen = new Set();
 
     for (const review of reviews) {
@@ -305,17 +316,22 @@ async function main() {
           }
         }
 
-        if (pendingReviewerChanges.has(review.reviewer)) {
+        const pendingRound = pendingReviewerRounds.get(review.reviewer);
+        if (pendingRound?.phase === "waitingReviewer") {
           const rereviewHours = hoursBetween(
-            pendingReviewerChanges.get(review.reviewer),
+            pendingRound.crewResponseAt,
             review.submittedAt,
           );
           if (rereviewHours !== null) reviewer._samples.reviewerRereviewHours.push(rereviewHours);
-          pendingReviewerChanges.delete(review.reviewer);
+          pendingReviewerRounds.delete(review.reviewer);
         }
 
         if (review.state === "CHANGES_REQUESTED") {
-          pendingReviewerChanges.set(review.reviewer, review.submittedAt);
+          pendingReviewerRounds.set(review.reviewer, {
+            phase: "waitingCrew",
+            changeRequestedAt: review.submittedAt,
+            crewResponseAt: null,
+          });
           pendingCrewRequestAt = review.submittedAt;
         }
 
@@ -357,6 +373,18 @@ async function main() {
             pendingCrewRequestAt = null;
           }
         }
+
+        if (review.state === "COMMENTED") {
+          for (const [reviewerGithubId, pendingRound] of pendingReviewerRounds.entries()) {
+            if (pendingRound.phase === "waitingCrew") {
+              pendingReviewerRounds.set(reviewerGithubId, {
+                ...pendingRound,
+                phase: "waitingReviewer",
+                crewResponseAt: review.submittedAt,
+              });
+            }
+          }
+        }
       }
     }
   }
@@ -368,7 +396,8 @@ async function main() {
     person.asReviewer.reviewedPRs = person._samples.reviewedPrKeys.size;
     person.asReviewer.recent30dReviewCount = countSince(person._samples.reviewerSubmittedAts, recentCutoff);
     person.asReviewer.avgFirstResponseHours = average(person._samples.reviewerFirstResponseHours);
-    person.asReviewer.avgRereviewHours = average(person._samples.reviewerRereviewHours);
+    person.asReviewer.avgRereviewHours = median(person._samples.reviewerRereviewHours);
+    person.asReviewer.rereviewSamples = person._samples.reviewerRereviewHours.length;
     person.asCrew.avgMissionHours = average(person._samples.crewMissionHours);
     person.asCrew.avgFirstReviewHours = average(person._samples.crewFirstReviewHours);
     person.asCrew.avgReRequestHours = average(person._samples.crewReRequestHours);

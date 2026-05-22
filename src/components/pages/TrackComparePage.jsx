@@ -152,7 +152,7 @@ function TrackColumn({ summary }) {
           <p className="text-right text-sm font-semibold text-rp-text">{formatHours(summary.avgMissionHours)}</p>
         </div>
         <div className="grid grid-cols-2 gap-4 py-3 last:pb-0">
-          <p className="text-xs text-rp-subtle">Avg Rereview</p>
+          <p className="text-xs text-rp-subtle">Avg Median Rereview</p>
           <p className="text-right text-sm font-semibold text-rp-text">{formatHours(summary.avgRereviewHours)}</p>
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function TrackComparePage({ data, loading }) {
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard title="Largest Track" value={loading ? "-" : busiestByPr?.short} note={`${formatNumber(busiestByPr?.prs)} PRs`} glow="purple" />
           <MetricCard title="Fastest First Review" value={loading ? "-" : fastestFirstReview?.short} note={formatHours(fastestFirstReview?.avgFirstReviewHours)} glow="green" />
-          <MetricCard title="Fastest Rereview" value={loading ? "-" : fastestRereview?.short} note={formatHours(fastestRereview?.avgRereviewHours)} glow="cyan" />
+          <MetricCard title="Fastest Median Rereview" value={loading ? "-" : fastestRereview?.short} note={formatHours(fastestRereview?.avgRereviewHours)} glow="cyan" />
           <MetricCard title="People" value={formatNumber(rows.reduce((sum, row) => sum + row.peopleCount, 0))} note="members with summary stats" glow="yellow" />
         </section>
 

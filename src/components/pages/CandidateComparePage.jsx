@@ -224,7 +224,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-3">
                 <p className="text-xs text-rp-subtle">first {formatHours(match.reviewer.asReviewer.avgFirstResponseHours)}</p>
-                <p className="text-xs text-rp-subtle">rereview {formatHours(match.reviewer.asReviewer.avgRereviewHours)}</p>
+                <p className="text-xs text-rp-subtle">median rereview {formatHours(match.reviewer.asReviewer.avgRereviewHours)}</p>
                 <p className="text-xs text-rp-subtle">events {formatNumber(match.reviewer.asReviewer.reviewEvents)}</p>
               </div>
             </Surface>

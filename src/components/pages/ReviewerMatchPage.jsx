@@ -160,7 +160,7 @@ function ReviewerCard({ match, rank }) {
           <p className="text-lg font-extrabold text-rp-purple">
             {formatHours(reviewer.asReviewer.avgRereviewHours)}
           </p>
-          <p className="mt-1 text-[10px] text-rp-subtle">avg rereview</p>
+          <p className="mt-1 text-[10px] text-rp-subtle">median rereview</p>
         </div>
         <div>
           <p className="text-lg font-extrabold text-rp-yellow">

@@ -288,6 +288,7 @@ avatar item:
         "reviewEvents": 48,
         "avgFirstResponseHours": 5.1,
         "avgRereviewHours": 6.4,
+        "rereviewSamples": 9,
         "activityByHour": [0, 0, 2]
       }
     }
