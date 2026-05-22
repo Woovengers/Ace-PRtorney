@@ -20,7 +20,6 @@ const TRACK_LABELS = {
   android: "AN",
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const RECENT_LIMIT = 24;
 
@@ -161,6 +160,20 @@ function createActivityItem({ githubId, member, role, track, repo, prNumber, eve
     occurredAt,
     url,
   };
+}
+
+function uniqueRecentPeople(items) {
+  const seen = new Set();
+  const uniqueItems = [];
+
+  for (const item of items) {
+    if (seen.has(item.githubId)) continue;
+    seen.add(item.githubId);
+    uniqueItems.push(item);
+    if (uniqueItems.length >= RECENT_LIMIT) break;
+  }
+
+  return uniqueItems;
 }
 
 async function main() {
@@ -344,8 +357,8 @@ async function main() {
   const byRecentTime = (a, b) => new Date(b.occurredAt) - new Date(a.occurredAt);
   const recentActivity = {
     generatedAt,
-    crew: recentCrew.sort(byRecentTime).slice(0, RECENT_LIMIT),
-    reviewers: recentReviewers.sort(byRecentTime).slice(0, RECENT_LIMIT),
+    crew: uniqueRecentPeople(recentCrew.sort(byRecentTime)),
+    reviewers: uniqueRecentPeople(recentReviewers.sort(byRecentTime)),
   };
 
   const summary = {

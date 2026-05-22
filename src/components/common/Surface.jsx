@@ -18,7 +18,7 @@ export default function Surface({
   return (
     <Component
       className={cn(
-        "rounded-lg border border-[rgba(42,42,42,0.28)] bg-rp-panel transition duration-200",
+        "cursor-pointer rounded-lg border border-[rgba(42,42,42,0.28)] bg-rp-panel transition duration-200",
         glowClasses[glow],
         interactive && "hover:-translate-y-0.5",
         className,

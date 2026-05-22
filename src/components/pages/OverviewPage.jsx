@@ -153,7 +153,7 @@ export default function OverviewPage({
                 title="Recently Active Crew"
                 subtitle="최근 제출/재요청 활동"
                 items={filteredCrew}
-                direction="left"
+                direction="right"
                 glow="green"
                 onItemClick={handlePersonClick}
               />

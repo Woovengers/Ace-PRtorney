@@ -38,6 +38,10 @@ button {
   cursor: pointer;
 }
 
+input {
+  cursor: text;
+}
+
 .page-grid {
   min-height: 100vh;
   background:

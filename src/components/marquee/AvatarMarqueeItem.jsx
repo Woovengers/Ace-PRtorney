@@ -13,7 +13,7 @@ export default function AvatarMarqueeItem({ item, onClick }) {
   return (
     <button
       type="button"
-      className="mx-2 flex h-[60px] w-[220px] shrink-0 items-center gap-3 rounded-full border border-[rgba(42,42,42,0.28)] bg-rp-panel2 px-2 text-left shadow-[0_0_24px_rgba(110,231,249,0.16)] transition duration-200 hover:scale-[1.03] hover:shadow-[0_0_36px_rgba(110,231,249,0.30)]"
+      className="mx-2 flex h-[60px] w-[220px] shrink-0 cursor-pointer items-center gap-3 rounded-full border border-[rgba(42,42,42,0.28)] bg-rp-panel2 px-2 text-left shadow-[0_0_24px_rgba(110,231,249,0.16)] transition duration-200 hover:scale-[1.03] hover:shadow-[0_0_36px_rgba(110,231,249,0.30)]"
       onClick={() => onClick?.(item)}
     >
       {item.avatarUrl ? (
