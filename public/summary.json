@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-05-22T04:13:39.344Z",
+  "sourceGeneratedAt": "2026-05-21T12:48:02.450Z",
+  "membersGeneratedAt": "2026-05-21T12:28:09.293Z",
+  "latestActivityAt": "2026-05-21T12:26:09Z",
+  "totalPRs": 19295,
+  "totalReviewEvents": 219865,
+  "totalReviewerEvents": 76780,
+  "totalRepos": 78,
+  "activeRepos": 77,
+  "totalMembers": 883,
+  "totalPeople": 1142,
+  "trackDistribution": [
+    {
+      "track": "backend",
+      "trackLabel": "BE",
+      "prs": 12968,
+      "percent": 67
+    },
+    {
+      "track": "frontend",
+      "trackLabel": "FE",
+      "prs": 4441,
+      "percent": 23
+    },
+    {
+      "track": "android",
+      "trackLabel": "AN",
+      "prs": 1886,
+      "percent": 10
+    }
+  ]
+}

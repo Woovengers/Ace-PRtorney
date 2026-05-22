@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReviewPace Design Mockup</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080808;
+        --panel: #1a1a1a;
+        --panel-2: #202020;
+        --line: #303030;
+        --muted: #8b8b8b;
+        --soft: #c8c8c8;
+        --text: #f4f4f4;
+        --violet: #6d63ff;
+        --violet-2: #2a275f;
+        --cyan: #73f4ff;
+        --lime: #c8ff7a;
+        --pink: #ff72b6;
+        --radius: 8px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 12% 8%, rgba(109, 99, 255, 0.12), transparent 28%),
+          radial-gradient(circle at 86% 16%, rgba(115, 244, 255, 0.08), transparent 24%),
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px),
+          var(--bg);
+        background-size: auto, auto, 52px 52px, 52px 52px, auto;
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        letter-spacing: 0;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(1160px, calc(100vw - 36px));
+        margin: 0 auto;
+        padding: 24px 0 64px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 42px;
+        color: var(--soft);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .mark {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border: 1px solid var(--soft);
+        border-radius: 50%;
+        color: var(--cyan);
+        font-size: 12px;
+      }
+
+      .nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .hero {
+        display: grid;
+        justify-items: center;
+        padding: 58px 0 34px;
+        text-align: center;
+      }
+
+      .kicker {
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .title {
+        margin: 0;
+        color: #e8e8e8;
+        font-size: clamp(38px, 6vw, 78px);
+        font-weight: 750;
+        line-height: 0.95;
+        text-wrap: balance;
+      }
+
+      .title span {
+        display: inline-block;
+        color: transparent;
+        -webkit-text-stroke: 1px #efefef;
+        text-shadow: 0 0 28px rgba(109, 99, 255, 0.55);
+        animation: pulseText 3.4s ease-in-out infinite;
+      }
+
+      @keyframes pulseText {
+        0%,
+        100% {
+          opacity: 0.74;
+          transform: translateY(0);
+        }
+        50% {
+          opacity: 1;
+          transform: translateY(-2px);
+        }
+      }
+
+      .rule {
+        width: min(520px, 76vw);
+        height: 1px;
+        margin: 24px 0 18px;
+        background: linear-gradient(90deg, transparent, #555, transparent);
+      }
+
+      .subtitle {
+        max-width: 640px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .search-wrap {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        width: min(640px, 100%);
+        margin-top: 28px;
+        padding: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(26, 26, 26, 0.9);
+        box-shadow: 0 18px 80px rgba(0, 0, 0, 0.35);
+      }
+
+      .search-wrap input {
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        padding: 13px 18px;
+        background: transparent;
+        color: var(--text);
+      }
+
+      .search-wrap input::placeholder {
+        color: #666;
+      }
+
+      .search-wrap button,
+      .chip {
+        border: 1px solid #38346f;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #37316d, var(--violet-2));
+        color: #fff;
+        cursor: default;
+      }
+
+      .search-wrap button {
+        padding: 0 18px;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .chips {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin: 22px 0 0;
+      }
+
+      .chip {
+        padding: 7px 13px;
+        color: var(--soft);
+        font-size: 12px;
+      }
+
+      .chip.secondary {
+        border-color: var(--line);
+        background: rgba(30, 30, 30, 0.88);
+        color: var(--muted);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 16px;
+        align-items: start;
+        margin-top: 28px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(26, 26, 26, 0.92);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      }
+
+      .profile {
+        position: sticky;
+        top: 18px;
+        padding: 20px;
+      }
+
+      .avatar-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .avatar {
+        display: grid;
+        width: 58px;
+        height: 58px;
+        place-items: center;
+        border: 1px solid #505050;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #242424, #38346f);
+        color: #fff;
+        font-size: 21px;
+        font-weight: 800;
+      }
+
+      .profile h2 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .profile p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .profile-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .profile-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 0;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .profile-item strong {
+        color: var(--text);
+        font-weight: 650;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .metric {
+        min-height: 154px;
+        padding: 18px;
+        overflow: hidden;
+      }
+
+      .metric-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .star {
+        color: #666;
+        font-size: 19px;
+      }
+
+      .metric-value {
+        margin-top: 28px;
+        font-size: clamp(28px, 4vw, 42px);
+        font-weight: 760;
+        line-height: 1;
+      }
+
+      .metric-note {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .metric.glow .metric-value {
+        color: var(--cyan);
+        text-shadow: 0 0 24px rgba(115, 244, 255, 0.28);
+      }
+
+      .metric.lime .metric-value {
+        color: var(--lime);
+      }
+
+      .metric.pink .metric-value {
+        color: var(--pink);
+      }
+
+      .section-title {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 30px 0 12px;
+      }
+
+      .section-title h3 {
+        margin: 0;
+        color: var(--soft);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .section-title span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .wide-grid {
+        display: grid;
+        grid-template-columns: 1.35fr 0.65fr;
+        gap: 16px;
+      }
+
+      .timeline {
+        padding: 18px;
+      }
+
+      .timeline-row {
+        display: grid;
+        grid-template-columns: 118px 1fr 74px;
+        gap: 14px;
+        align-items: center;
+        padding: 11px 0;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .timeline-row:first-of-type {
+        margin-top: 12px;
+      }
+
+      .bar {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #2b2b2b;
+      }
+
+      .bar > i {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--violet), var(--cyan));
+      }
+
+      .activity {
+        padding: 18px;
+      }
+
+      .hours {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 7px;
+        margin-top: 14px;
+      }
+
+      .hour {
+        aspect-ratio: 1;
+        border: 1px solid #2f2f2f;
+        border-radius: 4px;
+        background: #252525;
+      }
+
+      .hour.on-1 {
+        background: rgba(109, 99, 255, 0.45);
+      }
+
+      .hour.on-2 {
+        background: rgba(115, 244, 255, 0.55);
+      }
+
+      .hour.on-3 {
+        background: rgba(200, 255, 122, 0.65);
+      }
+
+      .card-heading {
+        margin: 0;
+        color: var(--soft);
+        font-size: 14px;
+      }
+
+      .card-sub {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 980px) {
+        .layout,
+        .wide-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .profile {
+          position: static;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          width: min(100% - 24px, 1160px);
+          padding-top: 14px;
+        }
+
+        .topbar {
+          height: auto;
+          align-items: flex-start;
+        }
+
+        .nav {
+          display: none;
+        }
+
+        .hero {
+          padding-top: 42px;
+        }
+
+        .search-wrap {
+          grid-template-columns: 1fr;
+          border-radius: 14px;
+        }
+
+        .search-wrap button {
+          height: 42px;
+        }
+
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .timeline-row {
+          grid-template-columns: 82px 1fr 54px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand"><span class="mark">RP</span> ReviewPace</div>
+        <nav class="nav">
+          <span>stats</span>
+          <span>crew</span>
+          <span>reviewer</span>
+        </nav>
+      </header>
+
+      <section class="hero" aria-label="ReviewPace search">
+        <div class="kicker">Woowacourse PR Review Analytics</div>
+        <h1 class="title">Review <span>Pace</span></h1>
+        <div class="rule"></div>
+        <p class="subtitle">
+          닉네임 하나로 리뷰어의 응답 리듬과 크루의 재요청 템포를 한 화면에서 확인합니다.
+        </p>
+
+        <div class="search-wrap">
+          <input value="검프" aria-label="닉네임 검색" />
+          <button>Search</button>
+        </div>
+
+        <div class="chips">
+          <span class="chip">All</span>
+          <span class="chip secondary">Backend 48</span>
+          <span class="chip secondary">Frontend 31</span>
+          <span class="chip secondary">Android 19</span>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="panel profile">
+          <div class="avatar-row">
+            <div class="avatar">검</div>
+            <div>
+              <h2>검프</h2>
+              <p>Livenow14 · backend · 8기 coach</p>
+            </div>
+          </div>
+
+          <div class="profile-list">
+            <div class="profile-item">
+              <span>GitHub</span>
+              <strong>Livenow14</strong>
+            </div>
+            <div class="profile-item">
+              <span>역할</span>
+              <strong>Reviewer / Crew</strong>
+            </div>
+            <div class="profile-item">
+              <span>최근 데이터</span>
+              <strong>2026.05.21</strong>
+            </div>
+          </div>
+        </aside>
+
+        <div>
+          <div class="section-title">
+            <h3>Reviewer Mode</h3>
+            <span>review events only</span>
+          </div>
+
+          <div class="metric-grid">
+            <article class="panel metric glow">
+              <div class="metric-label">1. First Response <span class="star">☆</span></div>
+              <div class="metric-value">7h 28m</div>
+              <div class="metric-note">PR 생성 후 첫 리뷰까지</div>
+            </article>
+            <article class="panel metric lime">
+              <div class="metric-label">2. Re-review <span class="star">☆</span></div>
+              <div class="metric-value">11h 04m</div>
+              <div class="metric-note">변경 요청 이후 다음 리뷰까지</div>
+            </article>
+            <article class="panel metric pink">
+              <div class="metric-label">3. Reviewed PRs <span class="star">☆</span></div>
+              <div class="metric-value">142</div>
+              <div class="metric-note">고유 PR 기준</div>
+            </article>
+          </div>
+
+          <div class="section-title">
+            <h3>Crew Mode</h3>
+            <span>author timeline</span>
+          </div>
+
+          <div class="metric-grid">
+            <article class="panel metric">
+              <div class="metric-label">4. Mission Time <span class="star">☆</span></div>
+              <div class="metric-value">2d 6h</div>
+              <div class="metric-note">PR 생성부터 merge/close까지</div>
+            </article>
+            <article class="panel metric">
+              <div class="metric-label">5. Re-request <span class="star">☆</span></div>
+              <div class="metric-value">5h 42m</div>
+              <div class="metric-note">변경 요청 후 크루 응답까지</div>
+            </article>
+            <article class="panel metric">
+              <div class="metric-label">6. Rounds <span class="star">☆</span></div>
+              <div class="metric-value">2.3</div>
+              <div class="metric-note">PR당 평균 변경 요청 라운드</div>
+            </article>
+          </div>
+
+          <div class="section-title">
+            <h3>Rhythm Board</h3>
+            <span>KST activity pattern</span>
+          </div>
+
+          <div class="wide-grid">
+            <article class="panel timeline">
+              <h4 class="card-heading">Review Timeline</h4>
+              <p class="card-sub">최근 미션 구간의 응답 흐름을 카드 내부에서 비교합니다.</p>
+              <div class="timeline-row">
+                <span>roomescape</span>
+                <div class="bar"><i style="width: 68%"></i></div>
+                <strong>7.4h</strong>
+              </div>
+              <div class="timeline-row">
+                <span>blackjack</span>
+                <div class="bar"><i style="width: 42%"></i></div>
+                <strong>4.8h</strong>
+              </div>
+              <div class="timeline-row">
+                <span>racingcar</span>
+                <div class="bar"><i style="width: 83%"></i></div>
+                <strong>13h</strong>
+              </div>
+              <div class="timeline-row">
+                <span>subway</span>
+                <div class="bar"><i style="width: 56%"></i></div>
+                <strong>8.1h</strong>
+              </div>
+            </article>
+
+            <article class="panel activity">
+              <h4 class="card-heading">Active Hours</h4>
+              <p class="card-sub">밝을수록 해당 시간대 리뷰 이벤트가 많습니다.</p>
+              <div class="hours">
+                <span class="hour"></span>
+                <span class="hour"></span>
+                <span class="hour on-1"></span>
+                <span class="hour"></span>
+                <span class="hour"></span>
+                <span class="hour on-2"></span>
+                <span class="hour on-1"></span>
+                <span class="hour on-3"></span>
+                <span class="hour on-2"></span>
+                <span class="hour on-1"></span>
+                <span class="hour"></span>
+                <span class="hour"></span>
+                <span class="hour on-2"></span>
+                <span class="hour on-3"></span>
+                <span class="hour on-3"></span>
+                <span class="hour on-1"></span>
+                <span class="hour"></span>
+                <span class="hour on-1"></span>
+                <span class="hour on-2"></span>
+                <span class="hour"></span>
+                <span class="hour"></span>
+                <span class="hour on-1"></span>
+                <span class="hour"></span>
+                <span class="hour"></span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
