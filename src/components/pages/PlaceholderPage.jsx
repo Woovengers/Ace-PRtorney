@@ -20,7 +20,7 @@ export default function PlaceholderPage({ type = "missions" }) {
           <p className="text-xs font-semibold text-rp-yellow">NEXT STEP</p>
           <h1 className="mt-3 text-3xl font-extrabold">{titles[type] ?? "Detail Page"}</h1>
           <p className="mt-4 text-sm leading-6 text-rp-muted">
-            이 화면은 다음 구현 범위입니다. 현재 단계에서는 Crew/Reviewer, Mission, Track Compare를 먼저 연결했습니다.
+            후보 여러 명을 직접 넣어 비교하는 화면은 다음 구현 범위입니다. 현재 단계에서는 크루별 Reviewer Match 추천을 먼저 연결했습니다.
           </p>
           <Link className="mt-6 inline-flex text-sm font-semibold text-rp-cyan" to="/">
             Overview로 돌아가기

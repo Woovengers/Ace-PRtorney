@@ -6,6 +6,7 @@ import MissionDetailPage from "./components/pages/MissionDetailPage.jsx";
 import OverviewPage from "./components/pages/OverviewPage.jsx";
 import PersonDetailPage from "./components/pages/PersonDetailPage.jsx";
 import PlaceholderPage from "./components/pages/PlaceholderPage.jsx";
+import ReviewerMatchPage from "./components/pages/ReviewerMatchPage.jsx";
 import TrackComparePage from "./components/pages/TrackComparePage.jsx";
 
 export default function App() {
@@ -127,7 +128,33 @@ export default function App() {
       <Route path="/missions" element={<MissionBoardPage data={data} loading={!data} />} />
       <Route path="/missions/:owner/:name" element={<MissionDetailPage data={data} loading={!data} />} />
       <Route path="/compare" element={<TrackComparePage data={data} loading={!data} />} />
-      <Route path="/matches" element={<PlaceholderPage type="matches" />} />
+      <Route path="/matches/compare" element={<PlaceholderPage type="matches" />} />
+      <Route
+        path="/matches"
+        element={
+          <ReviewerMatchPage
+            data={data}
+            loading={!data}
+            people={people}
+            selectedPerson={selectedPerson}
+            onNavigate={handleNavigate}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
+      <Route
+        path="/matches/:githubId"
+        element={
+          <ReviewerMatchPage
+            data={data}
+            loading={!data}
+            people={people}
+            selectedPerson={selectedPerson}
+            onNavigate={handleNavigate}
+            onSelectPerson={setSelectedPerson}
+          />
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
