@@ -9,6 +9,7 @@ import PersonDetailPage from "./components/pages/PersonDetailPage.jsx";
 import PrDrilldownPage from "./components/pages/PrDrilldownPage.jsx";
 import ReviewerMatchPage from "./components/pages/ReviewerMatchPage.jsx";
 import TrackComparePage from "./components/pages/TrackComparePage.jsx";
+import TrialPage from "./components/pages/TrialPage.jsx";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -173,6 +174,8 @@ export default function App() {
           }
         />
         <Route path="/prs/:owner/:repo/:number" element={<PrDrilldownPage />} />
+        <Route path="/trial" element={<TrialPage />} />
+        <Route path="/prs/:owner/:repo/:number/trial" element={<TrialPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
