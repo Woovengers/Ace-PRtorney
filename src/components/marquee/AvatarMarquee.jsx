@@ -3,7 +3,6 @@ import AvatarMarqueeItem from "./AvatarMarqueeItem.jsx";
 
 const ITEM_WIDTH_PX = 236;
 const PIXELS_PER_SECOND = 118;
-const MIN_LOOP_WIDTH_PX = 2200;
 const MIN_UNIQUE_ITEMS_FOR_MARQUEE = 18;
 
 export default function AvatarMarquee({
@@ -16,14 +15,7 @@ export default function AvatarMarquee({
 }) {
   const uniqueItems = Array.from(new Map(items.map((item) => [item.githubId, item])).values());
   const shouldAnimate = uniqueItems.length >= MIN_UNIQUE_ITEMS_FOR_MARQUEE;
-  const marqueeItems = [];
-  if (shouldAnimate) {
-    while (marqueeItems.length * ITEM_WIDTH_PX < MIN_LOOP_WIDTH_PX) {
-      marqueeItems.push(...uniqueItems);
-    }
-  }
-  const loopItems = marqueeItems.length > 0 ? [...marqueeItems, ...marqueeItems] : [];
-  const duration = Math.max(1, Math.round((marqueeItems.length * ITEM_WIDTH_PX) / PIXELS_PER_SECOND));
+  const duration = Math.max(1, Math.round((uniqueItems.length * ITEM_WIDTH_PX) / PIXELS_PER_SECOND));
 
   return (
     <Surface glow={glow} className="overflow-hidden p-5">
@@ -38,9 +30,9 @@ export default function AvatarMarquee({
             data-direction={direction}
             style={{ "--marquee-duration": `${duration}s` }}
           >
-            {loopItems.map((item, index) => (
+            {uniqueItems.map((item) => (
               <AvatarMarqueeItem
-                key={`${item.role}-${item.githubId}-${item.occurredAt}-${index}`}
+                key={`${item.role}-${item.githubId}`}
                 item={item}
                 onClick={onItemClick}
               />

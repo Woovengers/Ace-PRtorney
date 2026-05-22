@@ -21,7 +21,6 @@ export default function AppHeader({ active }) {
           <Link to="/reviewer" className={navClass("reviewer")}>Reviewers</Link>
           <Link to="/missions" className={navClass("missions")}>Missions</Link>
           <Link to="/matches" className={navClass("match")}>Match</Link>
-          <span className="text-rp-subtle">PRs</span>
         </nav>
       </div>
     </header>

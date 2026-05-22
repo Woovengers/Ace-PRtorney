@@ -1,19 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import AppHeader from "../common/AppHeader.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
 import AvatarMarquee from "../marquee/AvatarMarquee.jsx";
 import TrackDistribution from "../charts/TrackDistribution.jsx";
-import { cn } from "../../utils/classNames.js";
 import { formatNumber, formatShortDate } from "../../utils/time.js";
-
-const TRACK_FILTERS = [
-  { label: "All", value: "all" },
-  { label: "Backend", value: "backend" },
-  { label: "Frontend", value: "frontend" },
-  { label: "Android", value: "android" },
-];
 
 function SkeletonCard() {
   return (
@@ -25,11 +17,10 @@ function SkeletonCard() {
   );
 }
 
-function uniquePeopleByGithubId(items, trackFilter) {
+function uniquePeopleByGithubId(items) {
   const uniqueItems = new Map();
 
   for (const item of items) {
-    if (trackFilter !== "all" && item.track !== trackFilter) continue;
     if (!uniqueItems.has(item.githubId)) uniqueItems.set(item.githubId, item);
   }
 
@@ -43,17 +34,16 @@ export default function OverviewPage({
   onSelectPerson,
   onNavigate,
 }) {
-  const [trackFilter, setTrackFilter] = useState("all");
   const summary = data?.summary;
   const recentActivity = data?.recentActivity;
 
   const filteredCrew = useMemo(
-    () => uniquePeopleByGithubId(recentActivity?.crew ?? [], trackFilter),
-    [recentActivity, trackFilter],
+    () => uniquePeopleByGithubId(recentActivity?.crew ?? []),
+    [recentActivity],
   );
   const filteredReviewers = useMemo(
-    () => uniquePeopleByGithubId(recentActivity?.reviewers ?? [], trackFilter),
-    [recentActivity, trackFilter],
+    () => uniquePeopleByGithubId(recentActivity?.reviewers ?? []),
+    [recentActivity],
   );
 
   function handlePersonClick(item) {
@@ -85,23 +75,6 @@ export default function OverviewPage({
             onSelectPerson={onSelectPerson}
             onPersonNavigate={handleSearchNavigate}
           />
-          <div className="mt-4 flex flex-wrap gap-2">
-            {TRACK_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                className={cn(
-                  "rounded-full border px-4 py-2 text-xs font-semibold transition",
-                  trackFilter === filter.value
-                    ? "border-rp-purple bg-rp-purple text-white shadow-glow-purple"
-                    : "border-rp-line bg-rp-panel text-rp-muted hover:text-rp-text",
-                )}
-                onClick={() => setTrackFilter(filter.value)}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
         </section>
 
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">

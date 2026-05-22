@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { loadOverviewData } from "./data/loaders.js";
 import CandidateComparePage from "./components/pages/CandidateComparePage.jsx";
 import MissionBoardPage from "./components/pages/MissionBoardPage.jsx";
@@ -9,6 +9,16 @@ import PersonDetailPage from "./components/pages/PersonDetailPage.jsx";
 import PrDrilldownPage from "./components/pages/PrDrilldownPage.jsx";
 import ReviewerMatchPage from "./components/pages/ReviewerMatchPage.jsx";
 import TrackComparePage from "./components/pages/TrackComparePage.jsx";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
+  return null;
+}
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -56,111 +66,114 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <OverviewPage
-            data={data}
-            loading={!data}
-            people={people}
-            onNavigate={handleNavigate}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route
-        path="/crew"
-        element={
-          <PersonDetailPage
-            data={data}
-            loading={!data}
-            mode="crew"
-            people={people}
-            onNavigate={handleNavigate}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route
-        path="/crew/:githubId"
-        element={
-          <PersonDetailPage
-            data={data}
-            loading={!data}
-            mode="crew"
-            people={people}
-            onNavigate={handleNavigate}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route
-        path="/reviewer"
-        element={
-          <PersonDetailPage
-            data={data}
-            loading={!data}
-            mode="reviewer"
-            people={people}
-            onNavigate={handleNavigate}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route
-        path="/reviewer/:githubId"
-        element={
-          <PersonDetailPage
-            data={data}
-            loading={!data}
-            mode="reviewer"
-            people={people}
-            onNavigate={handleNavigate}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route path="/missions" element={<MissionBoardPage data={data} loading={!data} />} />
-      <Route path="/missions/:owner/:name" element={<MissionDetailPage data={data} loading={!data} />} />
-      <Route path="/compare" element={<TrackComparePage data={data} loading={!data} />} />
-      <Route
-        path="/matches/compare"
-        element={
-          <CandidateComparePage
-            people={people}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route
-        path="/matches"
-        element={
-          <ReviewerMatchPage
-            data={data}
-            loading={!data}
-            people={people}
-            selectedPerson={selectedPerson}
-            onNavigate={handleNavigate}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route
-        path="/matches/:githubId"
-        element={
-          <ReviewerMatchPage
-            data={data}
-            loading={!data}
-            people={people}
-            selectedPerson={selectedPerson}
-            onNavigate={handleNavigate}
-            onSelectPerson={setSelectedPerson}
-          />
-        }
-      />
-      <Route path="/prs/:owner/:repo/:number" element={<PrDrilldownPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <OverviewPage
+              data={data}
+              loading={!data}
+              people={people}
+              onNavigate={handleNavigate}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route
+          path="/crew"
+          element={
+            <PersonDetailPage
+              data={data}
+              loading={!data}
+              mode="crew"
+              people={people}
+              onNavigate={handleNavigate}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route
+          path="/crew/:githubId"
+          element={
+            <PersonDetailPage
+              data={data}
+              loading={!data}
+              mode="crew"
+              people={people}
+              onNavigate={handleNavigate}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route
+          path="/reviewer"
+          element={
+            <PersonDetailPage
+              data={data}
+              loading={!data}
+              mode="reviewer"
+              people={people}
+              onNavigate={handleNavigate}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route
+          path="/reviewer/:githubId"
+          element={
+            <PersonDetailPage
+              data={data}
+              loading={!data}
+              mode="reviewer"
+              people={people}
+              onNavigate={handleNavigate}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route path="/missions" element={<MissionBoardPage data={data} loading={!data} />} />
+        <Route path="/missions/:owner/:name" element={<MissionDetailPage data={data} loading={!data} />} />
+        <Route path="/compare" element={<TrackComparePage data={data} loading={!data} />} />
+        <Route
+          path="/matches/compare"
+          element={
+            <CandidateComparePage
+              people={people}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route
+          path="/matches"
+          element={
+            <ReviewerMatchPage
+              data={data}
+              loading={!data}
+              people={people}
+              selectedPerson={selectedPerson}
+              onNavigate={handleNavigate}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route
+          path="/matches/:githubId"
+          element={
+            <ReviewerMatchPage
+              data={data}
+              loading={!data}
+              people={people}
+              selectedPerson={selectedPerson}
+              onNavigate={handleNavigate}
+              onSelectPerson={setSelectedPerson}
+            />
+          }
+        />
+        <Route path="/prs/:owner/:repo/:number" element={<PrDrilldownPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
