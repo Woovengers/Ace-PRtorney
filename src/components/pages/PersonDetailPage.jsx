@@ -6,16 +6,21 @@ import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
-import { displayMeta, displayName, personInitial } from "../../utils/person.js";
+import { displayMeta, displayName, isPreferredCrew, personInitial } from "../../utils/person.js";
 import { formatHours, formatNumber, formatShortDate } from "../../utils/time.js";
 
 const HOUR_LABELS = Array.from({ length: 24 }, (_, hour) => (hour % 3 === 0 ? `${hour}` : ""));
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function firstPersonForMode(people, mode) {
-  return people.find((person) =>
-    mode === "crew" ? person.asCrew?.hasData : person.asReviewer?.hasData,
-  );
+  if (mode === "crew") {
+    return (
+      people.find((person) => isPreferredCrew(person)) ??
+      people.find((person) => person.asCrew?.hasData)
+    );
+  }
+
+  return people.find((person) => person.asReviewer?.hasData);
 }
 
 function EmptyState({ mode, people }) {

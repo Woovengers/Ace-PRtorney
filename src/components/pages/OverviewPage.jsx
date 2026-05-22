@@ -56,6 +56,10 @@ export default function OverviewPage({
     onNavigate(item.role === "reviewer" ? "reviewer" : "crew", item);
   }
 
+  function handleSearchNavigate(person) {
+    onNavigate(person.asCrew?.hasData ? "crew" : "reviewer", person);
+  }
+
   return (
     <main className="page-grid min-h-screen overflow-x-hidden text-rp-text">
       <header className="sticky top-0 z-30 border-b border-rp-line/70 bg-rp-bg/92 backdrop-blur">
@@ -86,7 +90,12 @@ export default function OverviewPage({
         </section>
 
         <section className="mt-8 max-w-3xl">
-          <SearchBox people={people} selectedPerson={selectedPerson} onSelectPerson={onSelectPerson} />
+          <SearchBox
+            people={people}
+            selectedPerson={selectedPerson}
+            onSelectPerson={onSelectPerson}
+            onPersonNavigate={handleSearchNavigate}
+          />
           <div className="mt-4 flex flex-wrap gap-2">
             {TRACK_FILTERS.map((filter) => (
               <button

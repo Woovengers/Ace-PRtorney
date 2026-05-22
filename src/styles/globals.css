@@ -61,6 +61,7 @@ input {
   display: flex;
   width: max-content;
   animation: marquee-left 38s linear infinite;
+  animation-duration: var(--marquee-duration, 38s);
 }
 
 .marquee-track[data-direction="right"] {

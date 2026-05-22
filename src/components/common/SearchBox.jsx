@@ -4,6 +4,7 @@ import { displayMeta, displayName } from "../../utils/person.js";
 
 export default function SearchBox({ people, selectedPerson, onSelectPerson, onPersonNavigate }) {
   const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
 
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -21,13 +22,14 @@ export default function SearchBox({ people, selectedPerson, onSelectPerson, onPe
   }, [people, query]);
 
   function selectPerson(person) {
-    onSelectPerson(person);
+    onSelectPerson?.(person);
     setQuery(displayName(person));
+    setIsOpen(false);
     onPersonNavigate?.(person);
   }
 
   return (
-    <Surface glow="purple" className="relative z-10 p-2">
+    <Surface glow="purple" className="relative z-10 p-2" onBlur={() => setIsOpen(false)}>
       <label className="sr-only" htmlFor="person-search">
         사람 검색
       </label>
@@ -35,7 +37,17 @@ export default function SearchBox({ people, selectedPerson, onSelectPerson, onPe
         <input
           id="person-search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setIsOpen(false);
+              event.currentTarget.blur();
+            }
+          }}
           placeholder="닉네임 또는 GitHub ID 검색"
           className="min-h-12 min-w-0 flex-1 rounded-md border border-rp-line bg-rp-bg px-4 text-sm text-rp-text outline-none transition focus:border-rp-purple"
         />
@@ -50,13 +62,14 @@ export default function SearchBox({ people, selectedPerson, onSelectPerson, onPe
           )}
         </div>
       </div>
-      {query.trim() && matches.length > 0 ? (
+      {isOpen && query.trim() && matches.length > 0 ? (
         <div className="absolute left-2 right-2 top-[calc(100%+8px)] z-20 overflow-hidden rounded-lg border border-rp-line bg-rp-panel shadow-glow-purple">
           {matches.map((person) => (
             <button
               key={person.githubId}
               type="button"
               className="flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-rp-panel2"
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => selectPerson(person)}
             >
               <span>

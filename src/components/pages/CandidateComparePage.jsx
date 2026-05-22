@@ -5,11 +5,11 @@ import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
 import { compareReviewerCandidates } from "../../utils/reviewerMatch.js";
-import { displayMeta, displayName } from "../../utils/person.js";
+import { displayMeta, displayName, isPreferredCrew } from "../../utils/person.js";
 import { formatHours, formatNumber } from "../../utils/time.js";
 
 function firstCrew(people) {
-  return people.find((person) => person.asCrew?.hasData);
+  return people.find((person) => isPreferredCrew(person)) ?? people.find((person) => person.asCrew?.hasData);
 }
 
 function candidateLabel(person) {
