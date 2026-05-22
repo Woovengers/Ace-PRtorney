@@ -6,6 +6,7 @@ import MissionDetailPage from "./components/pages/MissionDetailPage.jsx";
 import OverviewPage from "./components/pages/OverviewPage.jsx";
 import PersonDetailPage from "./components/pages/PersonDetailPage.jsx";
 import PlaceholderPage from "./components/pages/PlaceholderPage.jsx";
+import TrackComparePage from "./components/pages/TrackComparePage.jsx";
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -125,7 +126,7 @@ export default function App() {
       />
       <Route path="/missions" element={<MissionBoardPage data={data} loading={!data} />} />
       <Route path="/missions/:owner/:name" element={<MissionDetailPage data={data} loading={!data} />} />
-      <Route path="/compare" element={<PlaceholderPage type="compare" />} />
+      <Route path="/compare" element={<TrackComparePage data={data} loading={!data} />} />
       <Route path="/matches" element={<PlaceholderPage type="matches" />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
