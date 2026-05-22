@@ -4,6 +4,7 @@ import MatchModeTabs from "../common/MatchModeTabs.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
+import MatchScoreBreakdown from "../match/MatchScoreBreakdown.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
 import { compareReviewerCandidates } from "../../utils/reviewerMatch.js";
 import { displayMeta, displayName } from "../../utils/person.js";
@@ -161,6 +162,18 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
                 id="candidate-search"
                 value={candidateQuery}
                 onChange={(event) => setCandidateQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setCandidateQuery("");
+                    event.currentTarget.blur();
+                    return;
+                  }
+
+                  if (event.key === "Enter" && candidateQuery.trim() && candidateSuggestions.length > 0) {
+                    event.preventDefault();
+                    addCandidate(candidateSuggestions[0]);
+                  }
+                }}
                 placeholder="후보 리뷰어 닉네임 또는 GitHub ID 검색"
                 className="min-h-12 w-full rounded-md border border-rp-line bg-rp-bg px-4 text-sm text-rp-text outline-none transition focus:border-rp-cyan"
               />
@@ -256,6 +269,7 @@ export default function CandidateComparePage({ data, people, onSelectPerson }) {
                 <p className="text-xs text-rp-subtle">재리뷰 중앙값 {formatHours(match.reviewer.asReviewer.avgRereviewHours)}</p>
                 <p className="text-xs text-rp-subtle">리뷰 이벤트 {formatNumber(match.reviewer.asReviewer.reviewEvents)}</p>
               </div>
+              <MatchScoreBreakdown scores={match.scores} />
             </Surface>
           ))}
         </section>

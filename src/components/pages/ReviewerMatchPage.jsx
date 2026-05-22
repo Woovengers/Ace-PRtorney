@@ -6,6 +6,7 @@ import MatchModeTabs from "../common/MatchModeTabs.jsx";
 import MetricCard from "../common/MetricCard.jsx";
 import SearchBox from "../common/SearchBox.jsx";
 import Surface from "../common/Surface.jsx";
+import MatchScoreBreakdown from "../match/MatchScoreBreakdown.jsx";
 import { fetchJson, shouldUseApi } from "../../data/api.js";
 import { calculateReviewerMatches } from "../../utils/reviewerMatch.js";
 import { displayMeta, displayName, isPreferredCrew, personInitial } from "../../utils/person.js";
@@ -137,36 +138,30 @@ function ReviewerCard({ match, rank }) {
         </div>
         <div className="lg:min-w-[320px]">
           <p className="text-right text-[38px] font-extrabold leading-none text-rp-green">{match.score}</p>
-          <p className="mt-1 text-right text-xs text-rp-subtle">match score</p>
+          <p className="mt-1 text-right text-xs text-rp-subtle">매칭 점수</p>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-5">
-        <ScoreBar label="Overlap" value={scores.overlap} glow="cyan" />
-        <ScoreBar label="First" value={scores.firstReviewSpeed} glow="green" />
-        <ScoreBar label="Rereview" value={scores.rereviewSpeed} glow="purple" />
-        <ScoreBar label="Track" value={scores.trackFit} glow="yellow" />
-        <ScoreBar label="Activity" value={scores.recentActivity} glow="green" />
-      </div>
+      <MatchScoreBreakdown scores={scores} />
 
       <div className="mt-6 grid gap-4 border-t border-rp-line pt-5 sm:grid-cols-3">
         <div>
           <p className="text-lg font-extrabold text-rp-cyan">
             {formatHours(reviewer.asReviewer.avgFirstResponseHours)}
           </p>
-          <p className="mt-1 text-[10px] text-rp-subtle">avg first response</p>
+          <p className="mt-1 text-[10px] text-rp-subtle">첫 리뷰 응답</p>
         </div>
         <div>
           <p className="text-lg font-extrabold text-rp-purple">
             {formatHours(reviewer.asReviewer.avgRereviewHours)}
           </p>
-          <p className="mt-1 text-[10px] text-rp-subtle">median rereview</p>
+          <p className="mt-1 text-[10px] text-rp-subtle">재리뷰 중앙값</p>
         </div>
         <div>
           <p className="text-lg font-extrabold text-rp-yellow">
             {formatNumber(reviewer.asReviewer.reviewEvents)}
           </p>
-          <p className="mt-1 text-[10px] text-rp-subtle">review events</p>
+          <p className="mt-1 text-[10px] text-rp-subtle">리뷰 이벤트</p>
         </div>
       </div>
     </Surface>
@@ -275,10 +270,10 @@ export default function ReviewerMatchPage({
         </section>
 
         <section className="mt-[54px] grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard title="Selected Crew" value={displayName(crew)} note={displayMeta(crew)} glow="cyan" />
-          <MetricCard title="Candidates" value={formatNumber(matches.length)} note="recent same-track reviewers" glow="purple" />
-          <MetricCard title="Best Match" value={topMatch?.reviewer ? displayName(topMatch.reviewer) : "-"} note={topMatch ? `${topMatch.score} score` : "no candidate"} glow="green" />
-          <MetricCard title="Crew PRs" value={formatNumber(crew.asCrew?.totalPRs)} note={`first review ${formatHours(crew.asCrew?.avgFirstReviewHours)}`} glow="yellow" />
+          <MetricCard title="선택한 크루" value={displayName(crew)} note={displayMeta(crew)} glow="cyan" />
+          <MetricCard title="후보" value={formatNumber(matches.length)} note="최근 활동이 있는 같은 트랙 리뷰어" glow="purple" />
+          <MetricCard title="최고 매칭" value={topMatch?.reviewer ? displayName(topMatch.reviewer) : "-"} note={topMatch ? `${topMatch.score}점` : "후보 없음"} glow="green" />
+          <MetricCard title="크루 PR" value={formatNumber(crew.asCrew?.totalPRs)} note={`첫 리뷰 ${formatHours(crew.asCrew?.avgFirstReviewHours)}`} glow="yellow" />
         </section>
 
         <section className="mt-[58px] grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -289,13 +284,13 @@ export default function ReviewerMatchPage({
             glow="cyan"
           />
           <Surface glow="purple" className="p-5">
-            <h2 className="text-base font-extrabold text-rp-text">Scoring Weights</h2>
+            <h2 className="text-base font-extrabold text-rp-text">점수 반영 비율</h2>
             <div className="mt-5 space-y-4">
-              <ScoreBar label="Activity overlap" value={40} glow="cyan" />
-              <ScoreBar label="First response" value={25} glow="green" />
-              <ScoreBar label="Rereview speed" value={20} glow="purple" />
-              <ScoreBar label="Same track" value={10} glow="yellow" />
-              <ScoreBar label="Review activity" value={5} glow="green" />
+              <ScoreBar label="활동 시간대 궁합" value={40} glow="cyan" />
+              <ScoreBar label="첫 리뷰 응답" value={25} glow="green" />
+              <ScoreBar label="크루 응답 후 재리뷰" value={20} glow="purple" />
+              <ScoreBar label="같은 트랙" value={10} glow="yellow" />
+              <ScoreBar label="최근 리뷰 활동" value={5} glow="green" />
             </div>
           </Surface>
         </section>
@@ -322,7 +317,7 @@ export default function ReviewerMatchPage({
               className="rounded-full border border-rp-line bg-rp-panel px-5 py-3 text-sm font-semibold text-rp-muted transition hover:text-rp-text"
               onClick={() => setLimit((value) => value + 8)}
             >
-              More candidates
+              후보 더 보기
             </button>
           </div>
         ) : null}
