@@ -4,6 +4,18 @@
       "handle": "filesystem"
     },
     {
+      "src": "/api/trial/pr",
+      "dest": "/api/trial?action=pr"
+    },
+    {
+      "src": "/api/trial/comment",
+      "dest": "/api/trial?action=comment"
+    },
+    {
+      "src": "/api/trial/reply",
+      "dest": "/api/trial?action=reply"
+    },
+    {
       "src": "/api/matches/([^/]+)",
       "dest": "/api/matches?crewGithubId=$1"
     },

@@ -105,6 +105,31 @@ const vite = await createViteServer({
   appType: "spa",
 });
 
+function rewriteApiRoute(url) {
+  const rewrites = [
+    { pattern: /^\/api\/trial\/(pr|comment|reply)$/, path: "/api/trial", params: (match) => ({ action: match[1] }) },
+    { pattern: /^\/api\/matches\/([^/]+)$/, path: "/api/matches", params: (match) => ({ crewGithubId: decodeURIComponent(match[1]) }) },
+    { pattern: /^\/api\/people\/([^/]+)$/, path: "/api/people", params: (match) => ({ githubId: decodeURIComponent(match[1]) }) },
+    { pattern: /^\/api\/repos\/([^/]+)\/([^/]+)$/, path: "/api/repos", params: (match) => ({ owner: decodeURIComponent(match[1]), repo: decodeURIComponent(match[2]) }) },
+    {
+      pattern: /^\/api\/prs\/([^/]+)\/([^/]+)\/([0-9]+)$/,
+      path: "/api/prs",
+      params: (match) => ({
+        owner: decodeURIComponent(match[1]),
+        repo: decodeURIComponent(match[2]),
+        number: match[3],
+      }),
+    },
+  ];
+
+  for (const rewrite of rewrites) {
+    const match = url.pathname.match(rewrite.pattern);
+    if (match) return { pathname: rewrite.path, params: rewrite.params(match) };
+  }
+
+  return { pathname: url.pathname, params: {} };
+}
+
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://localhost:${port}`);
   if (!url.pathname.startsWith("/api/")) {
@@ -112,7 +137,8 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  const requestParts = splitPathname(url.pathname).slice(1);
+  const rewritten = rewriteApiRoute(url);
+  const requestParts = rewritten.pathname.split("/").filter(Boolean).slice(1);
   const route = routes
     .map((candidate) => ({ candidate, params: matchRoute(candidate.parts, requestParts) }))
     .find((result) => result.params);
@@ -130,6 +156,7 @@ const server = http.createServer(async (request, response) => {
       body: await readBody(request),
       query: Object.fromEntries(url.searchParams.entries()),
     });
+    Object.assign(apiRequest.query, rewritten.params);
     Object.assign(apiRequest.query, route.params);
 
     await module.default(apiRequest, createApiResponse(response));

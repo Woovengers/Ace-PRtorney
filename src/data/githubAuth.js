@@ -13,7 +13,7 @@ export async function logoutGithub() {
 }
 
 export async function postReviewReply({ owner, repo, pullNumber, commentId, body }) {
-  return fetchJson("/api/trial/reply", {
+  return fetchJson("/api/trial?action=reply", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -23,7 +23,7 @@ export async function postReviewReply({ owner, repo, pullNumber, commentId, body
 }
 
 export async function postLineComment({ owner, repo, pullNumber, commitId, path, line, body }) {
-  return fetchJson("/api/trial/comment", {
+  return fetchJson("/api/trial?action=comment", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

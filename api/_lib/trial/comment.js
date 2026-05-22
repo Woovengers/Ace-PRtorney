@@ -1,5 +1,5 @@
-import { requireGithubSession } from "../_lib/auth.js";
-import { methodNotAllowed, sendError, sendJson } from "../_lib/http.js";
+import { requireGithubSession } from "../auth.js";
+import { methodNotAllowed, sendError, sendJson } from "../http.js";
 
 function validText(value) {
   return typeof value === "string" && value.trim().length > 0;

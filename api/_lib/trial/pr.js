@@ -1,5 +1,5 @@
-import { readGithubSession } from "../_lib/auth.js";
-import { methodNotAllowed, sendError, sendJson } from "../_lib/http.js";
+import { readGithubSession } from "../auth.js";
+import { methodNotAllowed, sendError, sendJson } from "../http.js";
 
 const GITHUB_API = "https://api.github.com";
 

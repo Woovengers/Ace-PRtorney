@@ -13,5 +13,5 @@ export function parseGithubPrUrl(value) {
 }
 
 export async function loadTrialPr(prUrl) {
-  return fetchJson(`/api/trial/pr?url=${encodeURIComponent(prUrl)}`);
+  return fetchJson(`/api/trial?action=pr&url=${encodeURIComponent(prUrl)}`);
 }
