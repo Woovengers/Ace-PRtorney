@@ -279,18 +279,30 @@ export default function PersonDetailPage({
   useEffect(() => {
     if (!githubId || !shouldUseApi() || !prPage.hasMore || isPrLoading || prError) return;
 
+    function remainingScroll() {
+      return document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+    }
+
     function loadNearBottom() {
-      const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      const remaining = remainingScroll();
       if (remaining < 720) {
         loadPrPage(prPage.nextOffset);
       }
     }
 
-    loadNearBottom();
+    function loadIfPageIsTooShort() {
+      const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (remaining < 80) {
+        loadPrPage(prPage.nextOffset);
+      }
+    }
+
+    const frame = window.requestAnimationFrame(loadIfPageIsTooShort);
     window.addEventListener("scroll", loadNearBottom, { passive: true });
     window.addEventListener("resize", loadNearBottom);
 
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", loadNearBottom);
       window.removeEventListener("resize", loadNearBottom);
     };
