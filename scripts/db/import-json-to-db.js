@@ -151,7 +151,12 @@ async function importPullRequests(client, prs, repoIdMap) {
           created_at = excluded.created_at,
           closed_at = excluded.closed_at,
           merged_at = excluded.merged_at,
-          github_updated_at = excluded.github_updated_at,
+          github_updated_at = case
+            when pull_requests.github_updated_at is null then excluded.github_updated_at
+            when excluded.github_updated_at is null then pull_requests.github_updated_at
+            when pull_requests.github_updated_at > excluded.github_updated_at then pull_requests.github_updated_at
+            else excluded.github_updated_at
+          end,
           url = excluded.url,
           updated_at = now()
         returning id, repo_id, pr_number

@@ -11,7 +11,9 @@
     "fetch:stats": "node scripts/fetch-stats.js",
     "build:person-stats": "node scripts/build-person-stats.js",
     "db:init": "node scripts/db/init-db.js",
-    "db:import": "node scripts/db/import-json-to-db.js"
+    "db:import": "node scripts/db/import-json-to-db.js",
+    "db:sync": "node scripts/db/sync-db.js",
+    "db:build-summaries": "node scripts/db/build-db-summaries.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
