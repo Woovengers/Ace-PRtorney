@@ -9,10 +9,13 @@
     "preview": "vite preview",
     "fetch:members": "node scripts/fetch-members.js",
     "fetch:stats": "node scripts/fetch-stats.js",
-    "build:person-stats": "node scripts/build-person-stats.js"
+    "build:person-stats": "node scripts/build-person-stats.js",
+    "db:init": "node scripts/db/init-db.js",
+    "db:import": "node scripts/db/import-json-to-db.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
+    "pg": "^8.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
